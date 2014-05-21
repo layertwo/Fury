@@ -1,0 +1,14 @@
+Clean,Anti-Malware
+Clean,Antivirus-Uninstalls
+Clean,InstFix
+Clean,MiscTools
+Clean,Sysinternals
+Fresh Install,hardware
+Fresh Install,ActivationTools
+Diagnostics,hardware
+Diagnostics,InstFix
+Diagnostics,MiscTools
+Diagnostics,softinfo
+Diagnostics,Sysinternals
+Recovery,RecoveryTools
+Recovery,softinfo
