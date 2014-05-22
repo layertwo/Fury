@@ -1,7 +1,10 @@
-; Fury - AutoIt
+; Fury v. 0.1
+$version = 0.1
 ; Created: 5/21/2014
-; Modifed: 5/21/2014
+; Modifed: 5/22/2014
+$modified = "5/22/2014"
 ; Author: Lucas Messenger
+; Credits: Kenton Tofte, Luke Moore
 ; ------------------------------
 ; Fury icon: http://www.iconspedia.com/icon/fire-icon-35660.html
 ; CC Attribution license for icon: https://creativecommons.org/licenses/by/3.0/
@@ -18,19 +21,30 @@
 #include <Array.au3>
 #include <ListBoxConstants.au3>
 
-Dim $ExportLoc = @DesktopDir & '\Fury'
-Dim $FuryDir = @ScriptDir
-Dim $oList
-
 ; Arrays
 Dim $aOrig
 Dim $aClean[0]
 Dim $aFresh[0]
 Dim $aDiagnostics[0]
 Dim $aRecovery[0]
+Dim $aMerge[0]
+Dim $aExport[0]
 
-; folders.txt location
+; Locations
 Dim $File = @ScriptDir & '\admin\folders.txt'
+Dim $ExportLoc = @DesktopDir & '\Fury'
+
+; Menu items
+Dim $mFile, $mHelp, $iExit, $iAbout, $iLicense
+
+; Buttons
+Dim $bRun, $bCancel, $bClear, $bExit
+
+; Checkboxes
+Dim $cClean, $cFresh, $cDiagnostics, $cRecovery
+
+; Misc items
+Dim $pBar, $oList
 
 dataImport()
 
@@ -70,40 +84,45 @@ Func dataImport()
    EndIf
 EndFunc
 
-CreateGUI()
+CreateUSBGUI()
+GUIAdjustments(1)
 
 ; Create GUI
-Func CreateGUI()
+Func CreateUSBGUI()
 
-Local $mFile, $mHelp, $iExit, $iAbout, $iLicense ; menu items
-Local $bRun, $bCancel, $bClear, $bExit ; buttons
-Local $cClean, $cFresh, $cDiagnostics, $cRecovery ; checkboxes
-
-; Create GUI
-GUICreate("Fury", 470, 270)
+; GUI
+GUICreate("Fury", 470, 305)
 GUISetIcon("Fury.exe", 0)
 
-; Create menu and menu items
+; Menu and menu items
  $mFile = GUICtrlCreateMenu("&File")
  $iExit = GUICtrlCreateMenuItem("&Exit", $mFile)
  $mHelp = GUICtrlCreateMenu("&Help")
  $iAbout = GUICtrlCreateMenuItem("&About", $mHelp)
  $iLicense = GUICtrlCreateMenuItem("&License", $mHelp)
 
-; Create buttons
+; Buttons
 $bRun = GUICtrlCreateButton("Run", 129, 77, 80, 25)
 $bCancel = GUICtrlCreateButton("Cancel", 214, 77, 80, 25)
+GUICtrlSetState($bCancel, $GUI_DISABLE)
 $bClear = GUICtrlCreateButton("Clear", 299, 77, 80, 25)
 $bExit = GUICtrlCreateButton("Exit", 384, 77, 80, 25)
 
-; Create checkboxes
+; Checkboxes
 $cClean = GUICtrlCreateCheckbox("Clean", 10, 5, 80, 20)
 $cFresh = GUICtrlCreateCheckbox("Fresh Install", 10, 30, 80, 20)
 $cDiagnostics = GUICtrlCreateCheckbox("Diagnostics", 10, 55, 80, 20)
 $cRecovery = GUICtrlCreateCheckbox("Recovery", 10, 80, 80, 20)
 
-; create output box
-$oList = GUICtrlCreateList("", 5, 110, 460, 140, -1)
+; Progress bar
+GUICtrlCreateLabel("Progress:", 5, 109)
+$pBar = GUICtrlCreateProgress(55, 109, 410, 14)
+
+; Output box
+$oList = GUICtrlCreateList("", 5, 130, 460, 140, -1)
+
+; Bottom label
+GUICtrlCreateLabel("Created by Lucas Messenger | Fury v" & $version & " | Updated " & $modified, 5, 269)
 
 ; GUI MESSAGE LOOP
 GUISetState(@SW_SHOW)
@@ -119,43 +138,86 @@ While 1
 			   MsgBox($MB_SYSTEMMODAL, "License", "Insert license information.") ; may need to change to a form, not msgbox
 
 		 Case $bRun
+			; GUI checks
 			$ckdClean = BitAND(GUICtrlRead($cClean), $GUI_CHECKED)
 			$ckdFresh = BitAND(GUICtrlRead($cFresh), $GUI_CHECKED)
 			$ckdDiagnostics = BitAND(GUICtrlRead($cDiagnostics), $GUI_CHECKED)
 			$ckdRecovery = BitAND(GUICtrlRead($cRecovery), $GUI_CHECKED)
+
+			; If nothing is selected
 			If NOT $ckdClean AND NOT $ckdFresh AND NOT $ckdDiagnostics AND NOT $ckdRecovery = $GUI_CHECKED Then
 			   MsgBox($MB_SYSTEMMODAL, "Error", "Nothing is selected!")
 			Else
-			   If BitAND(GUICtrlRead($cClean), $GUI_CHECKED) = $GUI_CHECKED then
-				  CopyData("Clean")
-			   EndIf
-			   If BitAND(GUICtrlRead($cFresh), $GUI_CHECKED) = $GUI_CHECKED then
-				  CopyData("Fresh Install")
-			   EndIf
-			   If BitAND(GUICtrlRead($cDiagnostics), $GUI_CHECKED) = $GUI_CHECKED then
-				  CopyData("Diagnostics")
-			   EndIf
-			   If BitAND(GUICtrlRead($cRecovery), $GUI_CHECKED) = $GUI_CHECKED then
-				  CopyData("Recovery")
-			   EndIf
+			   CopyData()
 			EndIF
+
+		 Case $bClear
+			GUIAdjustments(2)
 	EndSwitch
  WEnd
 
  EndFunc
 
- Func CopyData($group)
+ Func CopyData()
+	GUIAdjustments(0)
+	Sleep (100)
 	If DirGetSize($ExportLoc) = -1 Then
-	  DirCreate($ExportLoc)
-	  GUICtrlSetData($oList, "Extracting folders...")
-
-   Else
-	 GUICtrlSetData($oList, "Did not create Fury directory, already exists.")
-	 GUICtrlSetData($oList, $group)
-	 For $i = 0 to UBound($aFolders, 1) -1
-		For $j = 0 to UBound($aFolders, 2) -1
-
-		   Next
-		Next
+	 DirCreate($ExportLoc)
+	 GUICtrlSetData($oList, "Sucessfully created " & $ExportLoc)
+  Else
+	GUICtrlSetData($oList, "Did not create " & $ExportLoc)
+	GUICtrlSetData($oList, "Directory already exists. Will only copy folders.")
+  EndIf
+  ReDim $aMerge[0]
+   If BitAND(GUICtrlRead($cClean), $GUI_CHECKED) = $GUI_CHECKED Then
+	  _ArrayConcatenate ($aMerge, $aClean)
    EndIf
- EndFunc
+   If BitAND(GUICtrlRead($cFresh), $GUI_CHECKED) = $GUI_CHECKED Then
+	  _ArrayConcatenate ($aMerge, $aFresh)
+   EndIf
+   If BitAND(GUICtrlRead($cDiagnostics), $GUI_CHECKED) = $GUI_CHECKED Then
+	  _ArrayConcatenate ($aMerge, $aDiagnostics)
+   EndIf
+   If BitAND(GUICtrlRead($cRecovery), $GUI_CHECKED) = $GUI_CHECKED Then
+	  _ArrayConcatenate ($aMerge, $aRecovery)
+   EndIf
+   $aExport = _ArrayUnique($aMerge, 1, 0, 0, 0)
+   For $i = 0 to UBound($aExport) - 1
+	  DirCopy(@ScriptDir & '\' & $aExport[$i], $ExportLoc & '\' & $aExport[$i])
+	  GUICtrlSetData($pBar, ($i/(UBound($aExport) - 1)) * 100)
+	  GUICtrlSetData($oList, "Copied " & @ScriptDir & '\' & $aExport[$i])
+	  Sleep (100)
+   Next
+	  GUIAdjustments(1)
+EndFunc
+
+Func GUIAdjustments(ByRef $value)
+   Select
+   Case $value = 0
+		 ; Disable Run and checkboxes, enable Cancel
+		 GUICtrlSetState($bRun, $GUI_DISABLE)
+		 GUICtrlSetState($bCancel, $GUI_ENABLE)
+		 GUICtrlSetState($cClean, $GUI_DISABLE)
+		 GUICtrlSetState($cFresh, $GUI_DISABLE)
+		 GUICtrlSetState($cDiagnostics, $GUI_DISABLE)
+		 GUICtrlSetState($cRecovery, $GUI_DISABLE)
+
+	  Case $value = 1
+		 ; Enable Run and checkboxes, disable Cancel
+		 GUICtrlSetState($bRun, $GUI_ENABLE)
+		 GUICtrlSetState($bCancel, $GUI_DISABLE)
+		 GUICtrlSetState($cClean, $GUI_ENABLE)
+		 GUICtrlSetState($cFresh, $GUI_ENABLE)
+		 GUICtrlSetState($cDiagnostics, $GUI_ENABLE)
+		 GUICtrlSetState($cRecovery, $GUI_ENABLE)
+
+	  Case $value = 2
+		 ; Clear checkboxes
+		 GUICtrlSetState($cClean, $GUI_UNCHECKED)
+		 GUICtrlSetState($cFresh, $GUI_UNCHECKED)
+		 GUICtrlSetState($cDiagnostics, $GUI_UNCHECKED)
+		 GUICtrlSetState($cRecovery, $GUI_UNCHECKED)
+   EndSelect
+EndFunc
+
+
