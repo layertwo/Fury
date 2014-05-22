@@ -3,10 +3,14 @@
 ; Modifed: 5/21/2014
 ; Author: Lucas Messenger
 ; ------------------------------
+; Fury icon: http://www.iconspedia.com/icon/fire-icon-35660.html
+; CC Attribution license for icon: https://creativecommons.org/licenses/by/3.0/
+; ------------------------------
 ; Error/Exit Codes
 ; 0 - Complete
 ; 1 - Error reading folders.txt, file does not exist or is corrupted
 ; 2 - Cannot find comma delimination
+; 3 - Error importing to individual arrays
 
 #include <GuiConstantsEx.au3>
 #include <MsgBoxConstants.au3>
@@ -17,30 +21,58 @@
 Dim $ExportLoc = @DesktopDir & '\Fury'
 Dim $FuryDir = @ScriptDir
 Dim $oList
+
+; Arrays
 Dim $aOrig
+Dim $aClean[0]
+Dim $aFresh[0]
+Dim $aDiagnostics[0]
+Dim $aRecovery[0]
+
+; folders.txt location
 Dim $File = @ScriptDir & '\admin\folders.txt'
-If Not _fileReadToArray($File, $aOrig) Then
-   MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Error code: 1")
-   Exit 1
-Else
-   _ArraySearch($aOrig, ",", 0, 0, 0, 1)
-	If @error Then
-	  MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Error code: 2")
-	  Exit 2
+
+dataImport()
+
+; Import data from folders.txt
+Func dataImport()
+   If Not _fileReadToArray($File, $aOrig) Then
+	  MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Error code: 1")
+	  Exit 1
    Else
-   $CountCol = stringsplit($aOrig[1],",")
-   Dim $aFolders[$aOrig[0] + 1][$CountCol[0] + 1]
-   For $x = 1 to ($aOrig[0])
-	  $OrigRow = StringSplit($aOrig[$x],",")
-	  For $y = 1 to ($CountCol[0])
-		 $aFolders[$x][$y] = $OrigRow[$y]
-	  Next
-   Next
+	  _ArraySearch($aOrig, ",", 0, 0, 0, 1)
+	  If @error Then
+		 MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Error code: 2")
+		 Exit 2
+	  Else
+		 For $x = 1 to ($aOrig[0])
+			$curLine = $aOrig[$x]
+			$strClean = StringInStr($curLine, "Clean")
+			$strFresh = StringInStr($curLine, "Fresh Install")
+			$strDiagnostics = StringInStr($curLine, "Diagnostics")
+			$strRecovery = StringInStr($curLine, "Recovery")
+			$strSplit = StringSplit($curLine, ",")
+			Select
+			   Case $strClean = 1
+				  _ArrayAdd($aClean, $strSplit[2])
+			   Case $strFresh = 1
+				  _ArrayAdd($aFresh, $strSplit[2])
+			   Case $strDiagnostics = 1
+				  _ArrayAdd($aDiagnostics, $strSplit[2])
+			   Case $strRecovery = 1
+				  _ArrayAdd($aRecovery, $strSplit[2])
+			   Case Else
+				  MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Error code: 3")
+				  Exit 3
+			   EndSelect
+			Next
+	  EndIf
    EndIf
-EndIf
+EndFunc
 
 CreateGUI()
 
+; Create GUI
 Func CreateGUI()
 
 Local $mFile, $mHelp, $iExit, $iAbout, $iLicense ; menu items
@@ -49,7 +81,7 @@ Local $cClean, $cFresh, $cDiagnostics, $cRecovery ; checkboxes
 
 ; Create GUI
 GUICreate("Fury", 470, 270)
-GUISetIcon(@SystemDir & "\mspaint.exe", 0) ; need to change this
+GUISetIcon("Fury.exe", 0)
 
 ; Create menu and menu items
  $mFile = GUICtrlCreateMenu("&File")
@@ -120,8 +152,9 @@ While 1
    Else
 	 GUICtrlSetData($oList, "Did not create Fury directory, already exists.")
 	 GUICtrlSetData($oList, $group)
-	 For $i = 0 to UBound($aFolders, 1)
-		For $j = 0 to UBound($aFolders, 2)
+	 For $i = 0 to UBound($aFolders, 1) -1
+		For $j = 0 to UBound($aFolders, 2) -1
+
 		   Next
 		Next
    EndIf
