@@ -208,8 +208,9 @@ While 1
 	  GUIAdjustments(1)
 EndFunc
 
-Func GUIAdjustments(ByRef $value)
+ Func GUIAdjustments(ByRef $value)
    Select
+   ; Extraction manager values (0 - 2)
    Case $value = 0
 		 ; Disable Run and checkboxes, enable Cancel
 		 GUICtrlSetState($bRun, $GUI_DISABLE)
@@ -234,6 +235,22 @@ Func GUIAdjustments(ByRef $value)
 		 GUICtrlSetState($cFresh, $GUI_UNCHECKED)
 		 GUICtrlSetState($cDiagnostics, $GUI_UNCHECKED)
 		 GUICtrlSetState($cRecovery, $GUI_UNCHECKED)
+
+	  ; Startup manager values (3 - 4)
+	  Case $value = 3
+		 ; Enable checkboxes
+		 GUICtrlSetState($cClean, $GUI_UNCHECKED)
+		 GUICtrlSetState($cOpen, $GUI_ENABLE)
+		 GUICtrlSetState($cScreensaver, $GUI_ENABLE)
+		 GUICtrlSetState($cLaunch, $GUI_ENABLE)
+		 GUICtrlSetState($cExit, $GUI_ENABLE)
+
+	  Case $value = 4
+		 ; Disable checkboxes
+		 GUICtrlSetState($cOpen, $GUI_DISABLE)
+		 GUICtrlSetState($cScreensaver, $GUI_DISABLE)
+		 GUICtrlSetState($cLaunch, $GUI_DISABLE)
+		 GUICtrlSetState($cExit, $GUI_DISABLE)
    EndSelect
 EndFunc
 
