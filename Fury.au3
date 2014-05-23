@@ -1,8 +1,7 @@
-; Fury v. 0.1
+; Fury
 $version = 0.1
 ; Created: 5/21/2014
-; Modifed: 5/22/2014
-$modified = "5/22/2014"
+$modified = "5/23/2014"
 ; Author: Lucas Messenger
 ; Credits: Kenton Tofte, Luke Moore
 ; ------------------------------
@@ -24,6 +23,17 @@ $modified = "5/22/2014"
 #include <file.au3>
 #include <Array.au3>
 #include <ListBoxConstants.au3>
+#include <WindowsConstants.au3>
+#include <ButtonConstants.au3>
+#include <GUIButton.au3>
+
+Dim $height
+Dim $width
+
+; Locations
+Dim $Folder = @ScriptDir
+Dim $File = @ScriptDir & '\admin\folders.txt'
+Dim $ExportLoc = @DesktopDir & '\Fury'
 
 ; Arrays
 Dim $aOrig
@@ -34,18 +44,11 @@ Dim $aRecovery[0]
 Dim $aMerge[0]
 Dim $aExport[0]
 
-; Locations
-Dim $File = @ScriptDir & '\admin\folders.txt'
-Dim $ExportLoc = @DesktopDir & '\Fury'
-
-; Menu items
-Dim $mFile, $mHelp, $iExit, $iAbout, $iLicense
-
 ; Buttons
 Dim $bRun, $bCancel, $bClear, $bExit
 
-; Checkboxes
-Dim $cClean, $cFresh, $cDiagnostics, $cRecovery
+; Menu items
+Dim $mFile, $mHelp, $iExit, $iAbout, $iLicense
 
 ; Misc items
 Dim $pBar, $oList
@@ -53,7 +56,16 @@ Dim $pBar, $oList
 ; Boolean
 $Cancelled = False
 
-dataImport()
+; Checkboxes
+Dim $cClean, $cFresh, $cDiagnostics, $cRecovery
+
+; Check if executing from Desktop or USB
+If $Folder = $ExportLoc Then
+   CreateDesktopGUI()
+Else
+   dataImport()
+   CreateUSBGUI()
+EndIf
 
 ; Import data from folders.txt
 Func dataImport()
@@ -91,14 +103,15 @@ Func dataImport()
    EndIf
 EndFunc
 
-CreateUSBGUI()
-GUIAdjustments(1)
-
-; Create GUI
+; Create USB GUI
 Func CreateUSBGUI()
 
-; GUI
-GUICreate("Fury", 470, 305)
+; Dimensions
+$height = 470
+$width = 305
+
+; GUI Create
+GUICreate("Fury", $height, $width)
 GUISetIcon("Fury.exe", 0)
 
 ; Menu and menu items
@@ -129,7 +142,7 @@ $pBar = GUICtrlCreateProgress(55, 109, 410, 14)
 $oList = GUICtrlCreateList("", 5, 130, 460, 140, -1)
 
 ; Bottom label
-GUICtrlCreateLabel("Created by Lucas Messenger | Fury v" & $version & " | Updated " & $modified, 5, 269)
+GUICtrlCreateLabel("Created by Lucas Messenger | Fury v" & $version & " | Updated " & $modified, 5, $height - 201 )
 
 ; GUI MESSAGE LOOP
 GUISetState(@SW_SHOW)
@@ -170,6 +183,77 @@ While 1
 
  EndFunc
 
+; Create Desktop GUI
+ Func CreateDesktopGUI()
+
+; Checkboxes
+Dim $cClean, $cOpen, $cScreensaver, $cLaunch
+
+; GUI
+$height = 225
+$width = 400
+GUICreate("Fury Startup Manager", $width, $height)
+GUISetIcon("Fury.exe", 0)
+
+; Buttons
+$bRun = GUICtrlCreateButton("Run", 230, 175, 80, 25)
+$bExit = GUICtrlCreateButton("Exit", 315, 175, 80, 25)
+
+; Group
+GUICtrlCreateGroup("", 10, 75, 380, 85, $BS_GROUPBOX)
+
+; Checkboxes
+; Left column
+$cClean = GUICtrlCreateCheckbox("Cleanup", 20, 85, 80, 20)
+GUICtrlSetState($cClean, $GUI_CHECKED)
+$cOpen = GUICtrlCreateCheckbox("Open", 20, 110, 80, 20)
+GUICtrlSetState($cOpen, $GUI_DISABLE)
+$cScreensaver = GUICtrlCreateCheckbox("Prevent Screensaver", 20, 135, 120, 20)
+GUICtrlSetState($cScreensaver, $GUI_DISABLE)
+
+; Right column
+$cLaunch = GUICtrlCreateCheckbox("Launch Fury", 160, 85, 80, 20)
+GUICtrlSetState($cLaunch, $GUI_DISABLE)
+$cExit = GUICtrlCreateCheckbox("Exit", 160, 110, 80, 20)
+GUICtrlSetState($cExit, $GUI_DISABLE)
+
+GUICtrlCreateLabel("Created by Lucas Messenger | Fury v" & $version & " | Updated " & $modified, 5, $height - 15)
+
+; GUI MESSAGE LOOP
+GUISetState(@SW_SHOW)
+$ckdClean = BitAND(GUICtrlRead($cClean), $GUI_CHECKED)
+While 1
+	Switch GUIGetMsg()
+		Case $GUI_EVENT_CLOSE, $bExit
+			Exit
+
+	    Case $bRun
+		   ; GUI checks
+			$ckdOpen = BitAND(GUICtrlRead($cOpen), $GUI_CHECKED)
+			$ckdScreensaver = BitAND(GUICtrlRead($cScreensaver), $GUI_CHECKED)
+			$ckdLaunch = BitAND(GUICtrlRead($cLaunch), $GUI_CHECKED)
+			$ckdExit = BitAND(GUICtrlRead($cExit), $GUI_CHECKED)
+
+			; If nothing is selected
+			If NOT $ckdClean AND NOT $ckdOpen AND NOT $ckdScreensaver AND NOT $ckdLaunch _
+			   AND NOT $ckdExit = $GUI_CHECKED Then
+			   MsgBox($MB_SYSTEMMODAL, "Error", "Nothing is selected!")
+			EndIf
+
+	  Case $cClean
+		 $clkClean = _GUICtrlButton_GetCheck($cClean)
+		 Switch $clkClean
+			Case $BST_CHECKED
+			   GUIAdjustments(4)
+			Case $BST_UNCHECKED
+			   GUIAdjustments(3)
+		 EndSwitch
+	EndSwitch
+ WEnd
+
+ EndFunc
+
+; Copy data
  Func CopyData()
 	GUIAdjustments(0)
 	Sleep (100)
@@ -196,7 +280,7 @@ While 1
    $aExport = _ArrayUnique($aMerge, 1, 0, 0, 0)
    For $i = 0 to UBound($aExport) - 1
 	  If $Cancelled = False Then
-		 _CopyDir(@ScriptDir & "\" & $aExport[$i] & "\*", $ExportLoc & "\" & $aExport[$i])
+		 DirCopy(@ScriptDir & "\" & $aExport[$i] & "\*", $ExportLoc & "\" & $aExport[$i])
 		 GUICtrlSetData($pBar, ($i/(UBound($aExport) - 1)) * 100)
 		 GUICtrlSetData($oList, "Copied " & @ScriptDir & '\' & $aExport[$i])
 	  Else
@@ -253,5 +337,3 @@ EndFunc
 		 GUICtrlSetState($cExit, $GUI_DISABLE)
    EndSelect
 EndFunc
-
-
