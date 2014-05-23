@@ -14,6 +14,10 @@ $modified = "5/22/2014"
 ; 1 - Error reading folders.txt, file does not exist or is corrupted
 ; 2 - Cannot find comma delimination
 ; 3 - Error importing to individual arrays
+; -------------------------------
+; Comments
+;
+;
 
 #include <GuiConstantsEx.au3>
 #include <MsgBoxConstants.au3>
@@ -45,6 +49,9 @@ Dim $cClean, $cFresh, $cDiagnostics, $cRecovery
 
 ; Misc items
 Dim $pBar, $oList
+
+; Boolean
+$Cancelled = False
 
 dataImport()
 
@@ -132,10 +139,12 @@ While 1
 			Exit 0
 
 		 Case $iAbout
-			   MsgBox($MB_SYSTEMMODAL, "About", "Insert about information.") ; may need to change to a form, not msgbox
+			; May need to change to a form, not msgbox
+			   MsgBox($MB_SYSTEMMODAL, "About", "Insert about information.")
 
 		 Case $iLicense
-			   MsgBox($MB_SYSTEMMODAL, "License", "Insert license information.") ; may need to change to a form, not msgbox
+			 ; May need to change to a form, not msgbox
+			   MsgBox($MB_SYSTEMMODAL, "License", "Insert license information.")
 
 		 Case $bRun
 			; GUI checks
@@ -153,6 +162,9 @@ While 1
 
 		 Case $bClear
 			GUIAdjustments(2)
+
+		 Case $bCancel
+			$Cancelled = True
 	EndSwitch
  WEnd
 
@@ -183,9 +195,14 @@ While 1
    EndIf
    $aExport = _ArrayUnique($aMerge, 1, 0, 0, 0)
    For $i = 0 to UBound($aExport) - 1
-	  DirCopy(@ScriptDir & '\' & $aExport[$i], $ExportLoc & '\' & $aExport[$i])
-	  GUICtrlSetData($pBar, ($i/(UBound($aExport) - 1)) * 100)
-	  GUICtrlSetData($oList, "Copied " & @ScriptDir & '\' & $aExport[$i])
+	  If $Cancelled = False Then
+		 _CopyDir(@ScriptDir & "\" & $aExport[$i] & "\*", $ExportLoc & "\" & $aExport[$i])
+		 GUICtrlSetData($pBar, ($i/(UBound($aExport) - 1)) * 100)
+		 GUICtrlSetData($oList, "Copied " & @ScriptDir & '\' & $aExport[$i])
+	  Else
+		 GUICtrlSetData($oList, "Operation cancelled.")
+		 ExitLoop
+	  EndIf
 	  Sleep (100)
    Next
 	  GUIAdjustments(1)
