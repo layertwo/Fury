@@ -273,31 +273,33 @@ While 1
  EndIf
  FileCopy(@ScriptDir & "\Fury.exe", $ExportLoc)
  RegWrite ("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "Fury", "REG_SZ", $ExportLoc & "\Fury.exe")
- ; ReDim $aMerge[0]
-   ;If BitAND(GUICtrlRead($cClean), $GUI_CHECKED) = $GUI_CHECKED Then
-	;  _ArrayConcatenate ($aMerge, $aClean)
-  ; EndIf
-  ; If BitAND(GUICtrlRead($cFresh), $GUI_CHECKED) = $GUI_CHECKED Then
-	;  _ArrayConcatenate ($aMerge, $aFresh)
-  ; EndIf
-   ;If BitAND(GUICtrlRead($cDiagnostics), $GUI_CHECKED) = $GUI_CHECKED Then
-	;  _ArrayConcatenate ($aMerge, $aDiagnostics)
-   ;EndIf
-   ;If BitAND(GUICtrlRead($cRecovery), $GUI_CHECKED) = $GUI_CHECKED Then
-	;  _ArrayConcatenate ($aMerge, $aRecovery)
-  ; EndIf
-  ; $aExport = _ArrayUnique($aMerge, 1, 0, 0, 0)
-   ;For $i = 0 to UBound($aExport) - 1
-	;  If $Cancelled = False Then
-	;	 DirCopy(@ScriptDir & "\" & $aExport[$i] & "\*", $ExportLoc & "\" & $aExport[$i])
-	;	 GUICtrlSetData($pBar, ($i/(UBound($aExport) - 1)) * 100)
-	;	 GUICtrlSetData($oList, "Copied " & @ScriptDir & '\' & $aExport[$i])
-	;  Else
-	;	 GUICtrlSetData($oList, "Operation cancelled.")
-	;	 ExitLoop
-	;  EndIf
-	;  Sleep (100)
-  ; Next
+ ReDim $aMerge[0]
+ If BitAND(GUICtrlRead($cClean), $GUI_CHECKED) = $GUI_CHECKED Then
+   _ArrayConcatenate ($aMerge, $aClean)
+  EndIf
+  If BitAND(GUICtrlRead($cFresh), $GUI_CHECKED) = $GUI_CHECKED Then
+	 _ArrayConcatenate ($aMerge, $aFresh)
+  EndIf
+   If BitAND(GUICtrlRead($cDiagnostics), $GUI_CHECKED) = $GUI_CHECKED Then
+	  _ArrayConcatenate ($aMerge, $aDiagnostics)
+   EndIf
+   If BitAND(GUICtrlRead($cRecovery), $GUI_CHECKED) = $GUI_CHECKED Then
+	  _ArrayConcatenate ($aMerge, $aRecovery)
+   EndIf
+   $aExport = _ArrayUnique($aMerge, 1, 0, 0, 0)
+   For $i = 0 to UBound($aExport) - 1
+	  If $Cancelled = False Then
+		 If FileExists(@ScriptDir & "\" & $aExport[$i]) Then
+			DirCopy(@ScriptDir & "\" & $aExport[$i], $ExportLoc & "\" & $aExport[$i])
+			GUICtrlSetData($pBar, ($i/(UBound($aExport) - 1)) * 100)
+			GUICtrlSetData($oList, "Copied " & @ScriptDir & '\' & $aExport[$i])
+		 EndIf
+	  Else
+		 GUICtrlSetData($oList, "Operation cancelled.")
+		 ExitLoop
+	  EndIf
+	  Sleep (100)
+   Next
 	  GUIAdjustments(1)
 EndFunc
 
