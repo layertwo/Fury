@@ -58,13 +58,12 @@ Dim $pBar, $oList
 $Cancelled = False
 
 ; Checkboxes
-Dim $cClean, $cFresh, $cDiagnostics, $cRecovery
+Dim $cClean, $cFresh, $cDiagnostics, $cRecovery, $cOpen, $cScreensaver, $cLaunch, $cExit
 
 ; Check if executing from Desktop or USB
 If $Folder = $ExportLoc Then
    CreateDesktopGUI()
 Else
-
    dataImport()
    CreateUSBGUI()
 EndIf
@@ -193,9 +192,6 @@ While 1
 ; Create Desktop GUI
  Func CreateDesktopGUI()
 
-; Checkboxes
-Dim $cClean, $cOpen, $cScreensaver, $cLaunch
-
 ; GUI
 $height = 225
 $width = 400
@@ -228,7 +224,6 @@ GUICtrlCreateLabel("Created by Lucas Messenger | Fury v" & $version & " | Update
 
 ; GUI MESSAGE LOOP
 GUISetState(@SW_SHOW)
-$ckdClean = BitAND(GUICtrlRead($cClean), $GUI_CHECKED)
 While 1
 	Switch GUIGetMsg()
 		Case $GUI_EVENT_CLOSE, $bExit
@@ -236,6 +231,7 @@ While 1
 
 	    Case $bRun
 		   ; GUI checks
+			$ckdClean = BitAND(GUICtrlRead($cClean), $GUI_CHECKED)
 			$ckdOpen = BitAND(GUICtrlRead($cOpen), $GUI_CHECKED)
 			$ckdScreensaver = BitAND(GUICtrlRead($cScreensaver), $GUI_CHECKED)
 			$ckdLaunch = BitAND(GUICtrlRead($cLaunch), $GUI_CHECKED)
@@ -247,6 +243,10 @@ While 1
 			   MsgBox($MB_SYSTEMMODAL, "Error", "Nothing is selected!")
 			EndIf
 
+			If ckdClean = 1 Then
+			   DirRemove($ExportLoc, 1)
+			EndIf
+
 	  Case $cClean
 		 $clkClean = _GUICtrlButton_GetCheck($cClean)
 		 Switch $clkClean
@@ -254,7 +254,45 @@ While 1
 			   GUIAdjustments(4)
 			Case $BST_UNCHECKED
 			   GUIAdjustments(3)
-		 EndSwitch
+			EndSwitch
+
+	  Case $cOpen
+		 $clkOpen = _GUICtrlButton_GetCheck($cOpen)
+		 Switch $clkOpen
+			Case $BST_CHECKED
+			   GUIAdjustments(6)
+			Case $BST_UNCHECKED
+			   GUIAdjustments(5)
+			EndSwitch
+
+	  Case $cScreensaver
+		 $clkScreensaver = _GUICtrlButton_GetCheck($cScreensaver)
+		 Switch $clkScreensaver
+			Case $BST_CHECKED
+			   GUIAdjustments(6)
+			Case $BST_UNCHECKED
+			   GUIAdjustments(5)
+			EndSwitch
+
+	  Case $cLaunch
+		 $clkLaunch = _GUICtrlButton_GetCheck($cLaunch)
+		 Switch $clkLaunch
+			Case $BST_CHECKED
+			   GUIAdjustments(6)
+			Case $BST_UNCHECKED
+			   GUIAdjustments(5)
+			EndSwitch
+
+	  Case $cExit
+		 $clkExit = _GUICtrlButton_GetCheck($cExit)
+		 Switch $clkExit
+			Case $BST_CHECKED
+			   GUIAdjustments(6)
+			Case $BST_UNCHECKED
+			   GUIAdjustments(5)
+			EndSwitch
+
+
 	EndSwitch
  WEnd
 
@@ -332,7 +370,7 @@ EndFunc
 		 GUICtrlSetState($cDiagnostics, $GUI_UNCHECKED)
 		 GUICtrlSetState($cRecovery, $GUI_UNCHECKED)
 
-	  ; Startup manager values (3 - 4)
+	  ; Startup manager values (3 - 6)
 	  Case $value = 3
 		 ; Enable checkboxes
 		 GUICtrlSetState($cClean, $GUI_UNCHECKED)
@@ -347,5 +385,14 @@ EndFunc
 		 GUICtrlSetState($cScreensaver, $GUI_DISABLE)
 		 GUICtrlSetState($cLaunch, $GUI_DISABLE)
 		 GUICtrlSetState($cExit, $GUI_DISABLE)
+
+	  Case $value = 5
+		 ; Enable cleanup checkbox
+		 GUICtrlSetState($cClean, $GUI_ENABLE)
+
+	  Case $value = 6
+		 ; Disable cleanup checkbox
+		 GUICtrlSetState($cClean, $GUI_DISABLE)
+
    EndSelect
 EndFunc
