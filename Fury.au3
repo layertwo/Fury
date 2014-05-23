@@ -1,6 +1,6 @@
 ; Fury
 $version = 0.1
-; Created: 5/21/2014
+$created = "5/21/2014"
 $modified = "5/23/2014"
 ; Author: Lucas Messenger
 ; Credits: Kenton Tofte, Luke Moore
@@ -10,9 +10,10 @@ $modified = "5/23/2014"
 ; ------------------------------
 ; Error/Exit Codes
 ; 0 - Complete
-; 1 - Error reading folders.txt, file does not exist or is corrupted
-; 2 - Cannot find comma delimination
-; 3 - Error importing to individual arrays
+; 1 - folders.txt does not exist or is corrupted
+; 2 - Error reading folders.txt
+; 3 - Cannot find comma delimination
+; 4 - Error importing to individual arrays
 ; -------------------------------
 ; Comments
 ;
@@ -63,42 +64,48 @@ Dim $cClean, $cFresh, $cDiagnostics, $cRecovery
 If $Folder = $ExportLoc Then
    CreateDesktopGUI()
 Else
+
    dataImport()
    CreateUSBGUI()
 EndIf
 
 ; Import data from folders.txt
 Func dataImport()
-   If Not _fileReadToArray($File, $aOrig) Then
-	  MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Error code: 1")
+   If Not FileExists($File) Then
+	  MsgBox($MB_SYSTEMMODAL, "Import error", "Cannot find folders.txt. Is Fury running from the proper directory?" & @CRLF & @CRLF & "Error code: 1")
 	  Exit 1
    Else
-	  _ArraySearch($aOrig, ",", 0, 0, 0, 1)
-	  If @error Then
-		 MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Error code: 2")
+	  If Not _fileReadToArray($File, $aOrig) Then
+		 MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Does the file exist?" & @CRLF & @CRLF & "Error code: 2")
 		 Exit 2
 	  Else
-		 For $x = 1 to ($aOrig[0])
-			$curLine = $aOrig[$x]
-			$strClean = StringInStr($curLine, "Clean")
-			$strFresh = StringInStr($curLine, "Fresh Install")
-			$strDiagnostics = StringInStr($curLine, "Diagnostics")
-			$strRecovery = StringInStr($curLine, "Recovery")
-			$strSplit = StringSplit($curLine, ",")
-			Select
-			   Case $strClean = 1
-				  _ArrayAdd($aClean, $strSplit[2])
-			   Case $strFresh = 1
-				  _ArrayAdd($aFresh, $strSplit[2])
-			   Case $strDiagnostics = 1
-				  _ArrayAdd($aDiagnostics, $strSplit[2])
-			   Case $strRecovery = 1
-				  _ArrayAdd($aRecovery, $strSplit[2])
-			   Case Else
-				  MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Error code: 3")
-				  Exit 3
-			   EndSelect
-			Next
+		 _ArraySearch($aOrig, ",", 0, 0, 0, 1)
+		 If @error Then
+			MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. folders.txt is not comma delimited" & @CRLF & @CRLF & "Error code: 3")
+			Exit 3
+		 Else
+			For $x = 1 to ($aOrig[0])
+			   $curLine = $aOrig[$x]
+			   $strClean = StringInStr($curLine, "Clean")
+			   $strFresh = StringInStr($curLine, "Fresh Install")
+			   $strDiagnostics = StringInStr($curLine, "Diagnostics")
+			   $strRecovery = StringInStr($curLine, "Recovery")
+			   $strSplit = StringSplit($curLine, ",")
+			   Select
+				  Case $strClean = 1
+					 _ArrayAdd($aClean, $strSplit[2])
+				  Case $strFresh = 1
+					 _ArrayAdd($aFresh, $strSplit[2])
+				  Case $strDiagnostics = 1
+					 _ArrayAdd($aDiagnostics, $strSplit[2])
+				  Case $strRecovery = 1
+					 _ArrayAdd($aRecovery, $strSplit[2])
+				  Case Else
+					 MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file." & @CRLF & @CRLF & "Error code: 4")
+					 Exit 4
+				  EndSelect
+			   Next
+		 EndIf
 	  EndIf
    EndIf
 EndFunc
@@ -292,6 +299,7 @@ While 1
 	  GUIAdjustments(1)
 EndFunc
 
+; GUI adjustments
  Func GUIAdjustments(ByRef $value)
    Select
    ; Extraction manager values (0 - 2)
