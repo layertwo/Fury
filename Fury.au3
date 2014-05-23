@@ -58,7 +58,7 @@ Dim $pBar, $oList
 $Cancelled = False
 
 ; Checkboxes
-Dim $cClean, $cFresh, $cDiagnostics, $cRecovery, $cOpen, $cScreensaver, $cLaunch, $cExit
+Dim $cClean, $cFresh, $cDiagnostics, $cRecovery, $cOpen, $cScreensaver, $cPostprep, $cPRCS, $cLaunch, $cExit
 
 ; Check if executing from Desktop or USB
 If $Folder = $ExportLoc Then
@@ -113,8 +113,8 @@ EndFunc
 Func CreateUSBGUI()
 
 ; Dimensions
-$height = 470
-$width = 305
+$height = 475
+$width = 310
 
 ; GUI Create
 GUICreate("Fury", $height, $width)
@@ -193,40 +193,49 @@ While 1
  Func CreateDesktopGUI()
 
 ; GUI
-$height = 225
-$width = 400
+$height = 205
+$width = 405
 GUICreate("Fury Startup Manager", $width, $height)
 GUISetIcon("Fury.exe", 0)
 
 ; Buttons
-$bRun = GUICtrlCreateButton("Run", 230, 175, 80, 25)
-$bExit = GUICtrlCreateButton("Exit", 315, 175, 80, 25)
+$bRun = GUICtrlCreateButton("Run", 230, 155, 80, 25)
+$bExit = GUICtrlCreateButton("Exit", 315, 155, 80, 25)
 
 ; Group
-GUICtrlCreateGroup("", 10, 75, 380, 85, $BS_GROUPBOX)
+GUICtrlCreateGroup("Options", 10, 40, 385, 105, $BS_GROUPBOX)
 
 ; Checkboxes
 ; Left column
-$cClean = GUICtrlCreateCheckbox("Cleanup", 20, 85, 80, 20)
+$cClean = GUICtrlCreateCheckbox("Cleanup", 20, 60, 80, 20)
 GUICtrlSetState($cClean, $GUI_CHECKED)
-$cOpen = GUICtrlCreateCheckbox("Open", 20, 110, 80, 20)
+$cOpen = GUICtrlCreateCheckbox("Open Folder", 20, 85, 80, 20)
 GUICtrlSetState($cOpen, $GUI_DISABLE)
-$cScreensaver = GUICtrlCreateCheckbox("Prevent Screensaver", 20, 135, 120, 20)
+$cLaunch = GUICtrlCreateCheckbox("Launch Fury", 20, 110, 80, 20)
+GUICtrlSetState($cLaunch, $GUI_DISABLE)
+
+; Center column
+$cScreensaver = GUICtrlCreateCheckbox("Prevent Screensaver", 160, 60, 120, 20)
 GUICtrlSetState($cScreensaver, $GUI_DISABLE)
+$cPostprep = GUICtrlCreateCheckbox("Postprep", 160, 85, 120, 20)
+GUICtrlSetState($cPostprep, $GUI_DISABLE)
+$cPRCS = GUICtrlCreateCheckbox("PRCS", 160, 110, 80, 20)
+GUICtrlSetState($cPRCS, $GUI_DISABLE)
 
 ; Right column
-$cLaunch = GUICtrlCreateCheckbox("Launch Fury", 160, 85, 80, 20)
-GUICtrlSetState($cLaunch, $GUI_DISABLE)
-$cExit = GUICtrlCreateCheckbox("Exit", 160, 110, 80, 20)
+$cExit = GUICtrlCreateCheckbox("Exit", 300, 60, 80, 20)
 GUICtrlSetState($cExit, $GUI_DISABLE)
 
+; Create labels
+GUICtrlCreateLabel("If you are NOT a Help Desk technician, please press Run now.", 17, 15, 405)
+GUICtrlSetFont (-1, 8.5, 800)
 GUICtrlCreateLabel("Created by Lucas Messenger | Fury v" & $version & " | Updated " & $modified, 5, $height - 15)
 
 ; GUI MESSAGE LOOP
 GUISetState(@SW_SHOW)
 While 1
 	Switch GUIGetMsg()
-		Case $GUI_EVENT_CLOSE, $bExit
+	Case $GUI_EVENT_CLOSE, $bExit
 			Exit
 
 	    Case $bRun
@@ -243,8 +252,35 @@ While 1
 			   MsgBox($MB_SYSTEMMODAL, "Error", "Nothing is selected!")
 			EndIf
 
-			If ckdClean = 1 Then
-			   DirRemove($ExportLoc, 1)
+			If $ckdClean = 1 Then
+			   ; Removes registry entry
+			   RegDelete("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "Fury")
+			   ; Removes directory, may not work on operating systems older than Windows 7
+			   Run(@SystemDir & '\cmd.exe /C rmdir /S /Q "' & @ScriptDir & '"', @TempDir, @SW_HIDE)
+			   Exit
+			EndIf
+
+			If $ckdOpen = 1 Then
+			   Run("Explorer.exe " & $ExportLoc)
+			EndIf
+
+			If $ckdScreensaver = 1 Then
+			   RegWrite("HKEY_CURRENT_USER\Control Panel\Desktop", "ScreenSaveActive", "REG_SZ", "0")
+			   GUICreate("", $width, $height)
+			   $close = MsgBox(0, "Preventing screensaver", "The computer is not sleeping. Press OK to reenable it.")
+			   Switch $close
+				  Case 1
+					 RegWrite("HKEY_CURRENT_USER\Control Panel\Desktop", "ScreenSaveActive", "REG_SZ", "1")
+				  EndSwitch
+			EndIf
+
+			If $ckdLaunch = 1 Then
+			   WinSetState ("Fury Startup Manager", "", @SW_HIDE)
+			   CreateUSBGUI()
+			EndIf
+
+			If $ckdExit = 1 Then
+			   Exit
 			EndIf
 
 	  Case $cClean
@@ -310,7 +346,7 @@ While 1
 	GUICtrlSetData($oList, "Directory already exists. Will only copy folders.")
  EndIf
  FileCopy(@ScriptDir & "\Fury.exe", $ExportLoc)
- RegWrite ("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "Fury", "REG_SZ", $ExportLoc & "\Fury.exe")
+ RegWrite("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "Fury", "REG_SZ", $ExportLoc & "\Fury.exe")
  ReDim $aMerge[0]
  If BitAND(GUICtrlRead($cClean), $GUI_CHECKED) = $GUI_CHECKED Then
    _ArrayConcatenate ($aMerge, $aClean)
@@ -378,6 +414,8 @@ EndFunc
 		 GUICtrlSetState($cScreensaver, $GUI_ENABLE)
 		 GUICtrlSetState($cLaunch, $GUI_ENABLE)
 		 GUICtrlSetState($cExit, $GUI_ENABLE)
+		 GUICtrlSetState($cPostprep, $GUI_ENABLE)
+		 GUICtrlSetState($cPRCS, $GUI_ENABLE)
 
 	  Case $value = 4
 		 ; Disable checkboxes
@@ -385,6 +423,8 @@ EndFunc
 		 GUICtrlSetState($cScreensaver, $GUI_DISABLE)
 		 GUICtrlSetState($cLaunch, $GUI_DISABLE)
 		 GUICtrlSetState($cExit, $GUI_DISABLE)
+		 GUICtrlSetState($cPostprep, $GUI_DISABLE)
+		 GUICtrlSetState($cPRCS, $GUI_DISABLE)
 
 	  Case $value = 5
 		 ; Enable cleanup checkbox
