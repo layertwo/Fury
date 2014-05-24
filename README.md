@@ -1,4 +1,4 @@
 Fury
 ====
 
-Fury is Maintenance extraction utility. This repository is the development repo for Fury.
+Maintenance and administration application copy/export utility for use in the Liberty University IT HelpDesk
