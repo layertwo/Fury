@@ -92,7 +92,7 @@ Func dataImport()
 			   $strSplit = StringSplit($curLine, ",")
 			   Select
 				  Case $strClean = 1
-					 _ArrayAdd($aClean, $strSplit[2])
+						_ArrayAdd($aClean, $strSplit[2])
 				  Case $strFresh = 1
 					 _ArrayAdd($aFresh, $strSplit[2])
 				  Case $strDiagnostics = 1
@@ -102,8 +102,8 @@ Func dataImport()
 				  Case Else
 					 MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file." & @CRLF & @CRLF & "Error code: 4")
 					 Exit 4
-				  EndSelect
-			   Next
+			   EndSelect
+			Next
 		 EndIf
 	  EndIf
    EndIf
@@ -328,7 +328,6 @@ While 1
 			   GUIAdjustments(5)
 			EndSwitch
 
-
 	EndSwitch
  WEnd
 
@@ -348,16 +347,16 @@ While 1
  FileCopy(@ScriptDir & "\Fury.exe", $ExportLoc)
  RegWrite("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "Fury", "REG_SZ", $ExportLoc & "\Fury.exe")
  ReDim $aMerge[0]
- If BitAND(GUICtrlRead($cClean), $GUI_CHECKED) = $GUI_CHECKED Then
+ If _GUICtrlButton_GetCheck($cClean) = 1 Then
    _ArrayConcatenate ($aMerge, $aClean)
   EndIf
-  If BitAND(GUICtrlRead($cFresh), $GUI_CHECKED) = $GUI_CHECKED Then
+  If _GUICtrlButton_GetCheck($cFresh) = 1 Then
 	 _ArrayConcatenate ($aMerge, $aFresh)
   EndIf
-   If BitAND(GUICtrlRead($cDiagnostics), $GUI_CHECKED) = $GUI_CHECKED Then
+   If _GUICtrlButton_GetCheck($cDiagnostics) = 1 Then
 	  _ArrayConcatenate ($aMerge, $aDiagnostics)
    EndIf
-   If BitAND(GUICtrlRead($cRecovery), $GUI_CHECKED) = $GUI_CHECKED Then
+   If _GUICtrlButton_GetCheck($cRecovery) = 1 Then
 	  _ArrayConcatenate ($aMerge, $aRecovery)
    EndIf
    $aExport = _ArrayUnique($aMerge, 1, 0, 0, 0)
@@ -366,7 +365,7 @@ While 1
 		 If FileExists(@ScriptDir & "\" & $aExport[$i]) Then
 			DirCopy(@ScriptDir & "\" & $aExport[$i], $ExportLoc & "\" & $aExport[$i])
 			GUICtrlSetData($pBar, ($i/(UBound($aExport) - 1)) * 100)
-			GUICtrlSetData($oList, "Copied " & @ScriptDir & '\' & $aExport[$i])
+			GUICtrlSetData($oList, "Copied " & $Folder & "\" & $aExport[$i])
 		 EndIf
 	  Else
 		 GUICtrlSetData($oList, "Operation cancelled.")
