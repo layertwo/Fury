@@ -1,7 +1,7 @@
 ; Fury
 $version = 0.1
 $created = "5/21/2014"
-$modified = "5/23/2014"
+$modified = "5/25/2014"
 ; Author: Lucas Messenger
 ; Credits: Kenton Tofte, Luke Moore
 ; ------------------------------
@@ -32,7 +32,6 @@ Dim $height
 Dim $width
 
 ; Locations
-Dim $Folder = @ScriptDir
 Dim $File = @ScriptDir & '\admin\folders.txt'
 Dim $ExportLoc = @DesktopDir & '\Fury'
 
@@ -61,7 +60,7 @@ $Cancelled = False
 Dim $cClean, $cFresh, $cDiagnostics, $cRecovery, $cOpen, $cScreensaver, $cPostprep, $cPRCS, $cLaunch, $cExit
 
 ; Check if executing from Desktop or USB
-If $Folder = $ExportLoc Then
+If @ScriptDir = $ExportLoc Then
    CreateDesktopGUI()
 Else
    dataImport()
@@ -362,10 +361,12 @@ While 1
    $aExport = _ArrayUnique($aMerge, 1, 0, 0, 0)
    For $i = 0 to UBound($aExport) - 1
 	  If $Cancelled = False Then
-		 If FileExists(@ScriptDir & "\" & $aExport[$i]) Then
-			DirCopy(@ScriptDir & "\" & $aExport[$i], $ExportLoc & "\" & $aExport[$i])
+	  $FolderInput = @ScriptDir & "\" & $aExport[$i]
+		 If FileExists($FolderInput) Then
+			$FolderOutput = $ExportLoc & "\" & $aExport[$i]
+			RunWait(@ComSpec & ' /c xcopy /E /H /I "' & $FolderInput & '" "' & $FolderOutput &'"', "", @SW_HIDE)
 			GUICtrlSetData($pBar, ($i/(UBound($aExport) - 1)) * 100)
-			GUICtrlSetData($oList, "Copied " & $Folder & "\" & $aExport[$i])
+			GUICtrlSetData($oList, "Copied " & $FolderInput)
 		 EndIf
 	  Else
 		 GUICtrlSetData($oList, "Operation cancelled.")
