@@ -45,16 +45,13 @@ Dim $aMerge[0]
 Dim $aExport[0]
 
 ; Buttons
-Dim $bRun, $bCancel, $bClear, $bExit
+Dim $bRun, $bClear, $bExit
 
 ; Menu items
 Dim $mFile, $mHelp, $iExit, $iAbout, $iLicense
 
 ; Misc items
 Dim $pBar, $oList
-
-; Boolean
-$Cancelled = 0
 
 ; Checkboxes
 Dim $cClean, $cFresh, $cDiagnostics, $cRecovery, $cOpen, $cScreensaver, $cPostprep, $cPRCS, $cLaunch, $cExit
@@ -122,9 +119,7 @@ $iAbout = GUICtrlCreateMenuItem("&About", $mHelp)
 $iLicense = GUICtrlCreateMenuItem("&License", $mHelp)
 
 ; Buttons
-$bRun = GUICtrlCreateButton("Run", 129, 77, 80, 25)
-$bCancel = GUICtrlCreateButton("Cancel", 214, 77, 80, 25)
-GUICtrlSetState($bCancel, $GUI_DISABLE)
+$bRun = GUICtrlCreateButton("Run", 214, 77, 80, 25)
 $bClear = GUICtrlCreateButton("Clear", 299, 77, 80, 25)
 $bExit = GUICtrlCreateButton("Exit", 384, 77, 80, 25)
 
@@ -176,8 +171,6 @@ While 1
 		 Case $bClear
 			GUIAdjustments(2)
 
-		 Case $bCancel
-			$Cancelled = 1
 	EndSwitch
  WEnd
 
@@ -418,18 +411,16 @@ EndFunc
    Select
    ; Extraction manager values (0 - 2)
    Case $value = 0
-		 ; Disable Run and checkboxes, enable Cancel
+		 ; Disable Run and checkboxes
 		 GUICtrlSetState($bRun, $GUI_DISABLE)
-		 GUICtrlSetState($bCancel, $GUI_ENABLE)
 		 GUICtrlSetState($cClean, $GUI_DISABLE)
 		 GUICtrlSetState($cFresh, $GUI_DISABLE)
 		 GUICtrlSetState($cDiagnostics, $GUI_DISABLE)
 		 GUICtrlSetState($cRecovery, $GUI_DISABLE)
 
 	  Case $value = 1
-		 ; Enable Run and checkboxes, disable Cancel
+		 ; Enable Run and checkboxes
 		 GUICtrlSetState($bRun, $GUI_ENABLE)
-		 GUICtrlSetState($bCancel, $GUI_DISABLE)
 		 GUICtrlSetState($cClean, $GUI_ENABLE)
 		 GUICtrlSetState($cFresh, $GUI_ENABLE)
 		 GUICtrlSetState($cDiagnostics, $GUI_ENABLE)
