@@ -1,7 +1,7 @@
 ; Fury
 $version = 0.1
 $created = "5/21/2014"
-$modified = "5/25/2014"
+$modified = "5/27/2014"
 ; Author: Lucas Messenger
 ; Credits: Kenton Tofte, Luke Moore
 ; ------------------------------
@@ -10,10 +10,9 @@ $modified = "5/25/2014"
 ; ------------------------------
 ; Error/Exit Codes
 ; 0 - Complete
-; 1 - folders.txt does not exist or is corrupted
-; 2 - Error reading folders.txt
-; 3 - Cannot find comma delimination
-; 4 - Error importing to individual arrays
+; 1 - Error reading folders.txt
+; 2 - Cannot find comma delimination
+; 3 - Error importing to individual arrays
 ; -------------------------------
 ; Comments
 ;
@@ -74,13 +73,13 @@ Func dataImport()
 	  Exit 1
    Else
 	  If Not _fileReadToArray($File, $aOrig) Then
-		 MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Does the file exist?" & @CRLF & @CRLF & "Error code: 2")
-		 Exit 2
+		 MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Does the file exist?" & @CRLF & @CRLF & "Error code: 1")
+		 Exit 1
 	  Else
 		 _ArraySearch($aOrig, ",", 0, 0, 0, 1)
 		 If @error Then
-			MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. folders.txt is not comma delimited" & @CRLF & @CRLF & "Error code: 3")
-			Exit 3
+			MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. folders.txt is not comma delimited" & @CRLF & @CRLF & "Error code: 2")
+			Exit 2
 		 Else
 			For $x = 1 to ($aOrig[0])
 			   $curLine = $aOrig[$x]
@@ -99,8 +98,8 @@ Func dataImport()
 				  Case $strRecovery = 1
 					 _ArrayAdd($aRecovery, $strSplit[2])
 				  Case Else
-					 MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file." & @CRLF & @CRLF & "Error code: 4")
-					 Exit 4
+					 MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file." & @CRLF & @CRLF & "Error code: 3")
+					 Exit 3
 			   EndSelect
 			Next
 		 EndIf
@@ -120,11 +119,11 @@ GUICreate("Fury", $height, $width)
 GUISetIcon("Fury.exe", 0)
 
 ; Menu and menu items
- $mFile = GUICtrlCreateMenu("&File")
- $iExit = GUICtrlCreateMenuItem("&Exit", $mFile)
- $mHelp = GUICtrlCreateMenu("&Help")
- $iAbout = GUICtrlCreateMenuItem("&About", $mHelp)
- $iLicense = GUICtrlCreateMenuItem("&License", $mHelp)
+$mFile = GUICtrlCreateMenu("&File")
+$iExit = GUICtrlCreateMenuItem("&Exit", $mFile)
+$mHelp = GUICtrlCreateMenu("&Help")
+$iAbout = GUICtrlCreateMenuItem("&About", $mHelp)
+$iLicense = GUICtrlCreateMenuItem("&License", $mHelp)
 
 ; Buttons
 $bRun = GUICtrlCreateButton("Run", 129, 77, 80, 25)
@@ -144,7 +143,7 @@ GUICtrlCreateLabel("Progress:", 5, 109)
 $pBar = GUICtrlCreateProgress(55, 109, 410, 14)
 
 ; Output box
-$oList = GUICtrlCreateList("", 5, 130, 460, 140, -1)
+$oList = GUICtrlCreateList("", 5, 130, 460, 140, BitOr($WS_VSCROLL, $WS_BORDER))
 
 ; Bottom label
 GUICtrlCreateLabel("Created by Lucas Messenger | Fury v" & $version & " | Updated " & $modified, 5, $height - 201 )
@@ -228,7 +227,7 @@ GUICtrlSetState($cExit, $GUI_DISABLE)
 ; Create labels
 GUICtrlCreateLabel("If you are NOT a Help Desk technician, please press Run now.", 17, 15, 405)
 GUICtrlSetFont (-1, 8.5, 800)
-GUICtrlCreateLabel("Created by Lucas Messenger | Fury v" & $version & " | Updated " & $modified, 5, $height - 15)
+GUICtrlCreateLabel("Fury v" & $version, 5, $height - 15)
 
 ; GUI MESSAGE LOOP
 GUISetState(@SW_SHOW)
@@ -241,13 +240,15 @@ While 1
 		   ; GUI checks
 			$ckdClean = BitAND(GUICtrlRead($cClean), $GUI_CHECKED)
 			$ckdOpen = BitAND(GUICtrlRead($cOpen), $GUI_CHECKED)
-			$ckdScreensaver = BitAND(GUICtrlRead($cScreensaver), $GUI_CHECKED)
 			$ckdLaunch = BitAND(GUICtrlRead($cLaunch), $GUI_CHECKED)
+			$ckdScreensaver = BitAND(GUICtrlRead($cScreensaver), $GUI_CHECKED)
+			$ckdPostprep = BitAND(GUICtrlRead($cPostprep), $GUI_CHECKED)
+			$ckdPRCS = BitAND(GUICtrlRead($cPRCS), $GUI_CHECKED)
 			$ckdExit = BitAND(GUICtrlRead($cExit), $GUI_CHECKED)
 
 			; If nothing is selected
 			If NOT $ckdClean AND NOT $ckdOpen AND NOT $ckdScreensaver AND NOT $ckdLaunch _
-			   AND NOT $ckdExit = $GUI_CHECKED Then
+			   AND NOT $ckdPostprep AND NOT $ckdPRCS AND NOT $ckdExit = $GUI_CHECKED Then
 			   MsgBox($MB_SYSTEMMODAL, "Error", "Nothing is selected!")
 			EndIf
 
@@ -263,6 +264,11 @@ While 1
 			   Run("Explorer.exe " & $ExportLoc)
 			EndIf
 
+			If $ckdLaunch = 1 Then
+			   WinSetState ("Fury Startup Manager", "", @SW_HIDE)
+			   CreateUSBGUI()
+			EndIf
+
 			If $ckdScreensaver = 1 Then
 			   RegWrite("HKEY_CURRENT_USER\Control Panel\Desktop", "ScreenSaveActive", "REG_SZ", "0")
 			   GUICreate("", $width, $height)
@@ -273,9 +279,12 @@ While 1
 				  EndSwitch
 			EndIf
 
-			If $ckdLaunch = 1 Then
-			   WinSetState ("Fury Startup Manager", "", @SW_HIDE)
-			   CreateUSBGUI()
+			If $ckdPostprep = 1 Then
+			   Run($ExportLoc & "\Liberty\Postprep.exe")
+			EndIf
+
+			If $ckdPRCS = 1 Then
+			   Run($ExportLoc & "\Liberty\PRCS.exe")
 			EndIf
 
 			If $ckdExit = 1 Then
@@ -300,6 +309,15 @@ While 1
 			   GUIAdjustments(5)
 			EndSwitch
 
+	  Case $cLaunch
+		 $clkLaunch = _GUICtrlButton_GetCheck($cLaunch)
+		 Switch $clkLaunch
+			Case $BST_CHECKED
+			   GUIAdjustments(6)
+			Case $BST_UNCHECKED
+			   GUIAdjustments(5)
+			EndSwitch
+
 	  Case $cScreensaver
 		 $clkScreensaver = _GUICtrlButton_GetCheck($cScreensaver)
 		 Switch $clkScreensaver
@@ -309,9 +327,18 @@ While 1
 			   GUIAdjustments(5)
 			EndSwitch
 
-	  Case $cLaunch
-		 $clkLaunch = _GUICtrlButton_GetCheck($cLaunch)
-		 Switch $clkLaunch
+	  Case $cPostprep
+		 $clkPostprep = _GUICtrlButton_GetCheck($cPostprep)
+		 Switch $clkPostprep
+			Case $BST_CHECKED
+			   GUIAdjustments(6)
+			Case $BST_UNCHECKED
+			   GUIAdjustments(5)
+			EndSwitch
+
+	  Case $cPRCS
+		 $clkPRCS = _GUICtrlButton_GetCheck($cPRCS)
+		 Switch $clkPRCS
 			Case $BST_CHECKED
 			   GUIAdjustments(6)
 			Case $BST_UNCHECKED
@@ -343,8 +370,11 @@ While 1
 	GUICtrlSetData($oList, "Did not create " & $ExportLoc)
 	GUICtrlSetData($oList, "Directory already exists. Will only copy folders.")
  EndIf
- FileCopy(@ScriptDir & "\Fury.exe", $ExportLoc)
- RegWrite("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "Fury", "REG_SZ", $ExportLoc & "\Fury.exe")
+
+ ; Clear progress bar
+ GUICtrlSetData($pBar, 0)
+
+ ; Clear and merge array
  ReDim $aMerge[0]
  If _GUICtrlButton_GetCheck($cClean) = 1 Then
    _ArrayConcatenate ($aMerge, $aClean)
@@ -359,13 +389,23 @@ While 1
 	  _ArrayConcatenate ($aMerge, $aRecovery)
    EndIf
    $aExport = _ArrayUnique($aMerge, 1, 0, 0, 0)
+   _ArraySort($aExport, 0)
+
+   ; Determine array size
+   $vSize = UBound($aExport) + 1
+
+   ; Copy files to $ExportLoc
+   FileCopy(@ScriptDir & "\Fury.exe", $ExportLoc)
+   GUICtrlSetData($pBar, (1/($vSize)) * 100)
+   RegWrite("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "Fury", "REG_SZ", $ExportLoc & "\Fury.exe")
+   GUICtrlSetData($pBar, (2/($vSize)) * 100)
    For $i = 0 to UBound($aExport) - 1
 	  If $Cancelled = False Then
 	  $FolderInput = @ScriptDir & "\" & $aExport[$i]
 		 If FileExists($FolderInput) Then
 			$FolderOutput = $ExportLoc & "\" & $aExport[$i]
-			RunWait(@ComSpec & ' /c xcopy /E /H /I "' & $FolderInput & '" "' & $FolderOutput &'"', "", @SW_HIDE)
-			GUICtrlSetData($pBar, ($i/(UBound($aExport) - 1)) * 100)
+			RunWait(@ComSpec & ' /c xcopy /E /H /I /Y "' & $FolderInput & '" "' & $FolderOutput &'"', "", @SW_HIDE)
+			GUICtrlSetData($pBar, (($i + 2) /($vSize)) * 100)
 			GUICtrlSetData($oList, "Copied " & $FolderInput)
 		 EndIf
 	  Else
@@ -374,6 +414,7 @@ While 1
 	  EndIf
 	  Sleep (100)
    Next
+	   GUICtrlSetData($oList, "Operation completed.")
 	  GUIAdjustments(1)
 EndFunc
 
@@ -414,8 +455,12 @@ EndFunc
 		 GUICtrlSetState($cScreensaver, $GUI_ENABLE)
 		 GUICtrlSetState($cLaunch, $GUI_ENABLE)
 		 GUICtrlSetState($cExit, $GUI_ENABLE)
-		 GUICtrlSetState($cPostprep, $GUI_ENABLE)
-		 GUICtrlSetState($cPRCS, $GUI_ENABLE)
+		 If FileExists($ExportLoc & "\Liberty\Postprep.exe") Then
+			GUICtrlSetState($cPostprep, $GUI_ENABLE)
+		 EndIf
+		 If FileExists($ExportLoc & "\Liberty\PRCS.exe") Then
+			GUICtrlSetState($cPRCS, $GUI_ENABLE)
+		 EndIf
 
 	  Case $value = 4
 		 ; Disable checkboxes
