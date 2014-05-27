@@ -26,6 +26,7 @@ $modified = "5/27/2014"
 #include <WindowsConstants.au3>
 #include <ButtonConstants.au3>
 #include <GUIButton.au3>
+#include <GUIListbox.au3>
 
 Dim $height
 Dim $width
@@ -53,7 +54,7 @@ Dim $mFile, $mHelp, $iExit, $iAbout, $iLicense
 Dim $pBar, $oList
 
 ; Boolean
-$Cancelled = False
+$Cancelled = 0
 
 ; Checkboxes
 Dim $cClean, $cFresh, $cDiagnostics, $cRecovery, $cOpen, $cScreensaver, $cPostprep, $cPRCS, $cLaunch, $cExit
@@ -68,17 +69,13 @@ EndIf
 
 ; Import data from folders.txt
 Func dataImport()
-   If Not FileExists($File) Then
-	  MsgBox($MB_SYSTEMMODAL, "Import error", "Cannot find folders.txt. Is Fury running from the proper directory?" & @CRLF & @CRLF & "Error code: 1")
-	  Exit 1
-   Else
 	  If Not _fileReadToArray($File, $aOrig) Then
 		 MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Does the file exist?" & @CRLF & @CRLF & "Error code: 1")
 		 Exit 1
 	  Else
 		 _ArraySearch($aOrig, ",", 0, 0, 0, 1)
 		 If @error Then
-			MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. folders.txt is not comma delimited" & @CRLF & @CRLF & "Error code: 2")
+			MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. folders.txt is not comma delimited, or is missing commas." & @CRLF & @CRLF & "Error code: 2")
 			Exit 2
 		 Else
 			For $x = 1 to ($aOrig[0])
@@ -104,7 +101,6 @@ Func dataImport()
 			Next
 		 EndIf
 	  EndIf
-   EndIf
 EndFunc
 
 ; Create USB GUI
@@ -146,7 +142,7 @@ $pBar = GUICtrlCreateProgress(55, 109, 410, 14)
 $oList = GUICtrlCreateList("", 5, 130, 460, 140, BitOr($WS_VSCROLL, $WS_BORDER))
 
 ; Bottom label
-GUICtrlCreateLabel("Created by Lucas Messenger | Fury v" & $version & " | Updated " & $modified, 5, $height - 201 )
+GUICtrlCreateLabel("Lucas Messenger | Fury v" & $version & " | Updated " & $modified, 5, $height - 201 )
 
 ; GUI MESSAGE LOOP
 GUISetState(@SW_SHOW)
@@ -181,7 +177,7 @@ While 1
 			GUIAdjustments(2)
 
 		 Case $bCancel
-			$Cancelled = True
+			$Cancelled = 1
 	EndSwitch
  WEnd
 
@@ -360,9 +356,14 @@ While 1
  EndFunc
 
 ; Copy data
- Func CopyData()
+Func CopyData()
 	GUIAdjustments(0)
 	Sleep (100)
+
+   ; Clear list output
+   GUICtrlDelete($oList)
+   $oList = GUICtrlCreateList("", 5, 130, 460, 140, BitOr($WS_VSCROLL, $WS_BORDER))
+
 	If DirGetSize($ExportLoc) = -1 Then
 	 DirCreate($ExportLoc)
 	 GUICtrlSetData($oList, "Sucessfully created " & $ExportLoc)
@@ -400,19 +401,13 @@ While 1
    RegWrite("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "Fury", "REG_SZ", $ExportLoc & "\Fury.exe")
    GUICtrlSetData($pBar, (2/($vSize)) * 100)
    For $i = 0 to UBound($aExport) - 1
-	  If $Cancelled = False Then
 	  $FolderInput = @ScriptDir & "\" & $aExport[$i]
 		 If FileExists($FolderInput) Then
 			$FolderOutput = $ExportLoc & "\" & $aExport[$i]
 			RunWait(@ComSpec & ' /c xcopy /E /H /I /Y "' & $FolderInput & '" "' & $FolderOutput &'"', "", @SW_HIDE)
-			GUICtrlSetData($pBar, (($i + 2) /($vSize)) * 100)
-			GUICtrlSetData($oList, "Copied " & $FolderInput)
+			GUICtrlSetData($pBar, (($i + 2) /($vSize)) * 100
 		 EndIf
-	  Else
-		 GUICtrlSetData($oList, "Operation cancelled.")
-		 ExitLoop
-	  EndIf
-	  Sleep (100)
+	  Sleep(100)
    Next
 	   GUICtrlSetData($oList, "Operation completed.")
 	  GUIAdjustments(1)
