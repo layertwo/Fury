@@ -148,14 +148,10 @@ While 1
 			Exit 0
 
 		 Case $iAbout
-			; May need to change to a form, not msgbox
 			CreateInfoGUI("About")
-			   ;MsgBox($MB_SYSTEMMODAL, "About", "Insert about information.")
 
 		 Case $iLicense
-			 ; May need to change to a form, not msgbox
 			 CreateInfoGUI("License")
-			   ;MsgBox($MB_SYSTEMMODAL, "License", "Insert license information.")
 
 		 Case $bRun
 			; GUI checks
@@ -257,18 +253,16 @@ While 1
 			EndIf
 
 			If $ckdLaunch = 1 Then
-			   WinSetState ("Fury Startup Manager", "", @SW_HIDE)
-			   CreateUSBGUI()
+			   $response = MsgBox(1, "Warning", "Fury does not have network capabilities, therefore the ability to download files from server is not yet implemented." & @CRLF & @CRLF & "Would you still like to proceed?")
+			   If $response = 1 Then
+				  WinSetState ("Fury Startup Manager", "", @SW_HIDE)
+				  CreateUSBGUI()
+			   EndIf
 			EndIf
 
 			If $ckdScreensaver = 1 Then
-			   RegWrite("HKEY_CURRENT_USER\Control Panel\Desktop", "ScreenSaveActive", "REG_SZ", "0")
-			   GUICreate("", $width, $height)
-			   $close = MsgBox(0, "Preventing screensaver", "The computer is not sleeping. Press OK to reenable it.")
-			   Switch $close
-				  Case 1
-					 RegWrite("HKEY_CURRENT_USER\Control Panel\Desktop", "ScreenSaveActive", "REG_SZ", "1")
-				  EndSwitch
+			   ; Keep from sleeping for 3 days
+			   Run(@ComSpec& ' /c "' & @ScriptDir & '\admin\ScreensaverX.exe -q 259200"')
 			EndIf
 
 			If $ckdPostprep = 1 Then
@@ -415,6 +409,9 @@ Func CopyData()
    If _GUICtrlButton_GetCheck($cRecovery) = 1 Then
 	  _ArrayConcatenate ($aMerge, $aRecovery)
    EndIf
+
+   ; Add default folders to array
+   _ArrayAdd($aMerge, "admin")
    _ArrayAdd($aMerge, "Liberty")
    $aExport = _ArrayUnique($aMerge, 1, 0, 0, 0)
    _ArraySort($aExport, 0)
@@ -473,15 +470,17 @@ EndFunc
 		 ; Enable checkboxes
 		 GUICtrlSetState($cClean, $GUI_UNCHECKED)
 		 GUICtrlSetState($cOpen, $GUI_ENABLE)
-		 GUICtrlSetState($cScreensaver, $GUI_ENABLE)
 		 GUICtrlSetState($cLaunch, $GUI_ENABLE)
-		 GUICtrlSetState($cExit, $GUI_ENABLE)
+		 If FileExists($ExportLoc & "\admin\ScreensaverX.exe") Then
+			GUICtrlSetState($cScreensaver, $GUI_ENABLE)
+		 EndIf
 		 If FileExists($ExportLoc & "\Liberty\Postprep.exe") Then
 			GUICtrlSetState($cPostprep, $GUI_ENABLE)
 		 EndIf
 		 If FileExists($ExportLoc & "\Liberty\PRCS.exe") Then
 			GUICtrlSetState($cPRCS, $GUI_ENABLE)
 		 EndIf
+		 GUICtrlSetState($cExit, $GUI_ENABLE)
 
 	  Case $value = 4
 		 ; Disable checkboxes
