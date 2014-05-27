@@ -1,5 +1,5 @@
 ; Fury
-$version = "0.1.1"
+$version = "0.1.2"
 $created = "5/21/2014"
 $modified = "5/27/2014"
 ; Author: Lucas Messenger
@@ -262,7 +262,7 @@ While 1
 
 			If $ckdScreensaver = 1 Then
 			   ; Keep from sleeping for 3 days
-			   Run(@ComSpec& ' /c "' & @ScriptDir & '\admin\ScreensaverX.exe -q 259200"')
+			   Run(@ComSpec& ' /c "' & @ScriptDir & '\admin\ScreensaverX.exe -q"')
 			EndIf
 
 			If $ckdPostprep = 1 Then
@@ -430,6 +430,9 @@ Func CopyData()
 			$FolderOutput = $ExportLoc & "\" & $aExport[$i]
 			RunWait(@ComSpec & ' /c xcopy /E /H /I /Y "' & $FolderInput & '" "' & $FolderOutput &'"', "", @SW_HIDE)
 			GUICtrlSetData($oList, "Copied " & $FolderInput)
+			GUICtrlSetData($pBar, (($i + 3) /($vSize)) * 100)
+		 Else
+			GUICtrlSetData($oList, $FolderInput & " does not exists.")
 			GUICtrlSetData($pBar, (($i + 3) /($vSize)) * 100)
 		 EndIf
 	  Sleep(100)
