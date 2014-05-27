@@ -1,5 +1,5 @@
 ; Fury
-$version = 0.1
+$version = "0.1.1"
 $created = "5/21/2014"
 $modified = "5/27/2014"
 ; Author: Lucas Messenger
@@ -27,6 +27,7 @@ $modified = "5/27/2014"
 #include <ButtonConstants.au3>
 #include <GUIButton.au3>
 #include <GUIListbox.au3>
+#include <GuiEdit.au3>
 
 Dim $height
 Dim $width
@@ -148,11 +149,13 @@ While 1
 
 		 Case $iAbout
 			; May need to change to a form, not msgbox
-			   MsgBox($MB_SYSTEMMODAL, "About", "Insert about information.")
+			CreateInfoGUI("About")
+			   ;MsgBox($MB_SYSTEMMODAL, "About", "Insert about information.")
 
 		 Case $iLicense
 			 ; May need to change to a form, not msgbox
-			   MsgBox($MB_SYSTEMMODAL, "License", "Insert license information.")
+			 CreateInfoGUI("License")
+			   ;MsgBox($MB_SYSTEMMODAL, "License", "Insert license information.")
 
 		 Case $bRun
 			; GUI checks
@@ -348,6 +351,36 @@ While 1
 
  EndFunc
 
+ Func CreateInfoGUI($type)
+     $gWindow = GUICreate($type, 380, 250, 350, 350, BitOr($WS_CAPTION, $WS_POPUP, $WS_SYSMENU))
+	 GUISetIcon("Fury.exe", 0)
+     $bClose = GUICtrlCreateButton("Close", 150, 220, 80, 25)
+	 $eText = GUICtrlCreateEdit ("", 5, 5, 370, 210, BitOR($ES_NOHIDESEL, $WS_VSCROLL,$ES_READONLY, $ES_MULTILINE))
+
+	 If $type = "About" Then
+	  GUICtrlSetData($eText, "Fury is an computer maintenance and administration application originally designed for use in the Liberty University IT HelpDesk." & @CRLF & "It replaces the former application Alekto, and brings dynamic folder extraction." _
+		 & "The former application, Alekto was created as being a punisher of malicious software, Fury is named in a similar manner. Alekto was angry, and Fury is furious." & @CRLF & @CRLF & "Copyright (c) 2014, Lucas Messenger")
+	  ElseIf $type = "License" Then
+		GUICtrlSetData($eText, "Copyright (c) 2014, Lucas Messenger" & @CRLF & "All rights reserved." & @CRLF & @CRLF & "Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:" _
+		& @CRLF & @CRLF & "* Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer." & @CRLF & @CRLF & "* Redistributions in binary form must reproduce the above copyright notice," _
+		& " this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution." & @CRLF & @CRLF & "* Neither the name of the author nor the names of its contributors may be used to endorse or promote products derived from" _
+		& " this software without specific prior written permission." & @CRLF & @CRLF & "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 'AS IS' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE" _
+		& " IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL" _
+		& " DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY," _
+		& " OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.")
+	  EndIf
+
+     GUISetState()
+
+     While 1
+         Switch GUIGetMsg()
+             Case $GUI_EVENT_CLOSE, $bClose
+                 GUIDelete($gWindow)
+                 ExitLoop
+ 		EndSwitch
+ 	WEnd
+ EndFunc
+
 ; Copy data
 Func CopyData()
 	GUIAdjustments(0)
@@ -382,11 +415,12 @@ Func CopyData()
    If _GUICtrlButton_GetCheck($cRecovery) = 1 Then
 	  _ArrayConcatenate ($aMerge, $aRecovery)
    EndIf
+   _ArrayAdd($aMerge, "Liberty")
    $aExport = _ArrayUnique($aMerge, 1, 0, 0, 0)
    _ArraySort($aExport, 0)
 
    ; Determine array size
-   $vSize = UBound($aExport) + 1
+   $vSize = UBound($aExport) + 2
 
    ; Copy files to $ExportLoc
    FileCopy(@ScriptDir & "\Fury.exe", $ExportLoc)
@@ -398,7 +432,8 @@ Func CopyData()
 		 If FileExists($FolderInput) Then
 			$FolderOutput = $ExportLoc & "\" & $aExport[$i]
 			RunWait(@ComSpec & ' /c xcopy /E /H /I /Y "' & $FolderInput & '" "' & $FolderOutput &'"', "", @SW_HIDE)
-			GUICtrlSetData($pBar, (($i + 2) /($vSize)) * 100
+			GUICtrlSetData($oList, "Copied " & $FolderInput)
+			GUICtrlSetData($pBar, (($i + 3) /($vSize)) * 100)
 		 EndIf
 	  Sleep(100)
    Next
