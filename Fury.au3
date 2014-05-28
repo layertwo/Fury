@@ -53,7 +53,7 @@ Dim $aExport[0]
 Dim $bRun, $bClear, $bExit
 
 ; Menu items
-Dim $mFile, $mHelp, $iExit, $iAbout, $iLicense
+Dim $mFile, $mHelp, $iExit, $iNetwork, $iAbout, $iLicense
 
 ; Misc items
 Dim $pBar, $oList
@@ -62,7 +62,7 @@ Dim $pBar, $oList
 Dim $cClean, $cFresh, $cDiagnostics, $cRecovery, $cOpen, $cScreensaver, $cPostprep, $cPRCS, $cLaunch, $cExit
 
 ; Boolean
-Dim $serverAccess = False
+Dim $useServer = False
 
 ; Check if executing from Desktop or USB
 If @ScriptDir = $ExportLoc Then
@@ -79,21 +79,25 @@ Func dataImport()
    $oList = GUICtrlCreateList("", 5, 130, 460, 140, BitOr($WS_VSCROLL, $WS_BORDER))
 
    ; Check if can reach server, and download file from there, else use local copy
-   If Ping("10.254.10.29",1000) >=1 Then
-	  GUICtrlSetData($oList, "Server found. Downloading folders.txt from server...")
-		$txtGet = InetGet($serverPath & '/admin/folders.txt', @TempDir & '\' & $txtName, 2)
-		InetClose($txtGet)
-		$File = @TempDir & '\' & $txtName
-		GUICtrlSetData($oList, "Downloaded folders.txt from server")
-		$serverAccess = True
-	 Else
-		GUICtrlSetData($oList, "Cannot locate server. Using local copy of folders.txt.")
+   If $useServer = True Then
+	  If Ping("10.254.10.29",1000) >=1 Then
+		 GUICtrlSetData($oList, "Server found. Downloading folders.txt from server...")
+		 $txtGet = InetGet($serverPath & '/admin/folders.txt', @TempDir & '\' & $txtName, 2)
+		 InetClose($txtGet)
+		 $File = @TempDir & '\' & $txtName
+		 GUICtrlSetData($oList, "Downloaded folders.txt from server")
+	  Else
+		 GUICtrlSetData($oList, "Cannot locate server. Using local copy of folders.txt.")
+		 $File = @ScriptDir & '\admin\folders.txt'
+	  EndIf
+   Else
 		$File = @ScriptDir & '\admin\folders.txt'
-		If NOT FileExists($File) Then
-		   MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Does the file exist?" & @CRLF & @CRLF & "Error code: 1")
-		   Exit 1
+   EndIf
+
+	 If NOT FileExists($File) Then
+			MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Does the file exist?" & @CRLF & @CRLF & "Error code: 1")
+			Exit 1
 		 EndIf
-	EndIf
 
 	  If Not _fileReadToArray($File, $aOrig) Then
 		 MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Does the file exist?" & $File & @CRLF & @CRLF & "Error code: 1")
@@ -144,6 +148,8 @@ GUISetIcon("Fury.exe", 0)
 $mFile = GUICtrlCreateMenu("&File")
 $iExit = GUICtrlCreateMenuItem("&Exit", $mFile)
 $mHelp = GUICtrlCreateMenu("&Help")
+$iNetwork = GUICtrlCreateMenuItem("&Use server", $mHelp)
+GUICtrlCreateMenuItem("", $mHelp)
 $iAbout = GUICtrlCreateMenuItem("&About", $mHelp)
 $iLicense = GUICtrlCreateMenuItem("&License", $mHelp)
 
@@ -180,6 +186,15 @@ While 1
 
 		 Case $iLicense
 			 CreateInfoGUI("License")
+
+		  Case $iNetwork
+			If BitAND(GUICtrlRead($iNetwork), $GUI_CHECKED) = $GUI_CHECKED Then
+                GUICtrlSetState($iNetwork, $GUI_UNCHECKED)
+				$useServer = False
+            Else
+                GUICtrlSetState($iNetwork, $GUI_CHECKED)
+				$useServer = True
+            EndIf
 
 		 Case $bRun
 			; GUI checks
@@ -282,11 +297,8 @@ While 1
 			EndIf
 
 			If $ckdLaunch = 1 Then
-			   $response = MsgBox(1, "Warning", "Fury does not have network capabilities, therefore the ability to download files from server is not yet implemented." & @CRLF & @CRLF & "Would you still like to proceed?")
-			   If $response = 1 Then
-				  WinSetState ("Fury Startup Manager", "", @SW_HIDE)
-				  CreateUSBGUI()
-			   EndIf
+			   WinSetState ("Fury Startup Manager", "", @SW_HIDE)
+			   CreateUSBGUI()
 			EndIf
 
 			If $ckdScreensaver = 1 Then
@@ -444,48 +456,39 @@ Func CopyData()
    ; Determine array size
    $vSize = UBound($aExport) + 2
 
-   ; Use variable for whether to pull fron server or from local directory
-   Dim $InputLoc
-
-   ; Check if network in use
-   If $serverAccess = True Then
-	  $InputLoc = $ExportLoc
-	  For $i = 0 to UBound($aExport) - 1
-		 $fileGet = InetGet($alektoPath & '/' & $aExport[$i] & ".zip", @TempDir & '\' & $aExport[$i] & ".zip", 2)
-		InetClose($fileGet)
-		GUICtrlSetData($oList, "Downloaded " & $aExport[$i] & ".zip")
-		 RunWait(@ComSpec & ' /c "' & @ScriptDir & '\admin\unzip.exe ' & @TempDir & '\' & $aExport[$i] & '.zip -d ' & $ExportLoc & '"', "", @SW_HIDE)
-		 FileDelete(@TempDir &  '\' & $aExport[$i] & ".zip")
-
-		Next
-		Exit
-   Else
-	  $InputLoc = @ScriptDir
-   EndIf
-
-   ; Copy files to $ExportLoc
-   FileCopy($InputLoc & "\Fury.exe", $ExportLoc)
-   GUICtrlSetData($oList, "Copied " & $InputLoc & "\Fury.exe")
+   FileCopy(@ScriptDir & "\Fury.exe", $ExportLoc)
+   GUICtrlSetData($oList, "Copied " & @ScriptDir & "\Fury.exe")
    GUICtrlSetData($pBar, (1/($vSize)) * 100)
    ;RegWrite("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "Fury", "REG_SZ", $ExportLoc & "\Fury.exe")
    GUICtrlSetData($oList, "Created HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run\Fury")
    GUICtrlSetData($pBar, (2/($vSize)) * 100)
 
-
-   For $i = 0 to UBound($aExport) - 1
-	  $FolderInput = $InputLoc & "\" & $aExport[$i]
+   ; Copy files to $ExportLoc
+   If $useServer = True Then
+	  $InputLoc = $ExportLoc
+	  For $i = 0 to UBound($aExport) - 1
+		 $fileGet = InetGet($alektoPath & '/' & $aExport[$i] & ".zip", $ExportLoc & '\' & $aExport[$i] & ".zip", 2)
+		 InetClose($fileGet)
+		 GUICtrlSetData($oList, "Downloaded " & $aExport[$i] & ".zip")
+		 RunWait(@ComSpec & ' /c "' & @ScriptDir & '\admin\unzip.exe -o ' & $ExportLoc & '\' & $aExport[$i] & '.zip -d ' & $ExportLoc & '"')
+		 FileDelete($ExportLoc &  '\' & $aExport[$i] & ".zip")
+		 GUICtrlSetData($pBar, (($i + 3) /($vSize)) * 100)
+	  Next
+   Else
+	  For $i = 0 to UBound($aExport) - 1
+	  $FolderInput = @ScriptDir & "\" & $aExport[$i]
 		 If FileExists($FolderInput) Then
 			$FolderOutput = $ExportLoc & "\" & $aExport[$i]
 			RunWait(@ComSpec & ' /c xcopy /E /H /I /Y "' & $FolderInput & '" "' & $FolderOutput &'"', "", @SW_HIDE)
 			GUICtrlSetData($oList, "Copied " & $FolderInput)
-			GUICtrlSetData($pBar, (($i + 3) /($vSize)) * 100)
 		 Else
 			GUICtrlSetData($oList, $FolderInput & " does not exist")
-			GUICtrlSetData($pBar, (($i + 3) /($vSize)) * 100)
 		 EndIf
+		 GUICtrlSetData($pBar, (($i + 3) /($vSize)) * 100)
 	  Sleep(100)
    Next
-	   GUICtrlSetData($oList, "Operation completed.")
+   EndIf
+	  GUICtrlSetData($oList, "Operation completed.")
 	  GUIAdjustments(1)
 EndFunc
 
