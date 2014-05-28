@@ -33,8 +33,12 @@ Dim $height
 Dim $width
 
 ; Locations
-Dim $File = @ScriptDir & '\admin\folders.txt'
-Dim $ExportLoc = @DesktopDir & '\Fury'
+Global $File
+Global $txtName = "folders.txt"
+Global $serverPath = "https://helpdesk.liberty.edu/hdtools/Tech%20Projects%20&%20Source%20Code%20Files/Fury"
+Global $alektoPath = "https://helpdesk.liberty.edu/hdtools/Alekto"
+Global $ExportLoc = @DesktopDir & '\Fury'
+Global $tempDir = @TempDir & "\"
 
 ; Arrays
 Dim $aOrig
@@ -57,6 +61,9 @@ Dim $pBar, $oList
 ; Checkboxes
 Dim $cClean, $cFresh, $cDiagnostics, $cRecovery, $cOpen, $cScreensaver, $cPostprep, $cPRCS, $cLaunch, $cExit
 
+; Boolean
+Dim $serverAccess = False
+
 ; Check if executing from Desktop or USB
 If @ScriptDir = $ExportLoc Then
    CreateDesktopGUI()
@@ -66,8 +73,30 @@ EndIf
 
 ; Import data from folders.txt
 Func dataImport()
+
+   ; Clear list output
+   GUICtrlDelete($oList)
+   $oList = GUICtrlCreateList("", 5, 130, 460, 140, BitOr($WS_VSCROLL, $WS_BORDER))
+
+   ; Check if can reach server, and download file from there, else use local copy
+   If Ping("10.254.10.29",1000) >=1 Then
+	  GUICtrlSetData($oList, "Server found. Downloading folders.txt from server...")
+		$txtGet = InetGet($serverPath & '/admin/folders.txt', @TempDir & '\' & $txtName, 2)
+		InetClose($txtGet)
+		$File = @TempDir & '\' & $txtName
+		GUICtrlSetData($oList, "Downloaded folders.txt from server")
+		$serverAccess = True
+	 Else
+		GUICtrlSetData($oList, "Cannot locate server. Using local copy of folders.txt.")
+		$File = @ScriptDir & '\admin\folders.txt'
+		If NOT FileExists($File) Then
+		   MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Does the file exist?" & @CRLF & @CRLF & "Error code: 1")
+		   Exit 1
+		 EndIf
+	EndIf
+
 	  If Not _fileReadToArray($File, $aOrig) Then
-		 MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Does the file exist?" & @CRLF & @CRLF & "Error code: 1")
+		 MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Does the file exist?" & $File & @CRLF & @CRLF & "Error code: 1")
 		 Exit 1
 	  Else
 		 _ArraySearch($aOrig, ",", 0, 0, 0, 1)
@@ -380,10 +409,6 @@ Func CopyData()
 	GUIAdjustments(0)
 	Sleep (100)
 
-   ; Clear list output
-   GUICtrlDelete($oList)
-   $oList = GUICtrlCreateList("", 5, 130, 460, 140, BitOr($WS_VSCROLL, $WS_BORDER))
-
 	If DirGetSize($ExportLoc) = -1 Then
 	 DirCreate($ExportLoc)
 	 GUICtrlSetData($oList, "Created " & $ExportLoc)
@@ -419,22 +444,43 @@ Func CopyData()
    ; Determine array size
    $vSize = UBound($aExport) + 2
 
+   ; Use variable for whether to pull fron server or from local directory
+   Dim $InputLoc
+
+   ; Check if network in use
+   If $serverAccess = True Then
+	  $InputLoc = $ExportLoc
+	  For $i = 0 to UBound($aExport) - 1
+		 $fileGet = InetGet($alektoPath & '/' & $aExport[$i] & ".zip", @TempDir & '\' & $aExport[$i] & ".zip", 2)
+		InetClose($fileGet)
+		GUICtrlSetData($oList, "Downloaded " & $aExport[$i] & ".zip")
+		 RunWait(@ComSpec & ' /c "' & @ScriptDir & '\admin\unzip.exe ' & @TempDir & '\' & $aExport[$i] & '.zip -d ' & $ExportLoc & '"', "", @SW_HIDE)
+		 FileDelete(@TempDir &  '\' & $aExport[$i] & ".zip")
+
+		Next
+		Exit
+   Else
+	  $InputLoc = @ScriptDir
+   EndIf
+
    ; Copy files to $ExportLoc
-   FileCopy(@ScriptDir & "\Fury.exe", $ExportLoc)
-   GUICtrlSetData($oList, "Copied " & @ScriptDir & "\Fury.exe")
+   FileCopy($InputLoc & "\Fury.exe", $ExportLoc)
+   GUICtrlSetData($oList, "Copied " & $InputLoc & "\Fury.exe")
    GUICtrlSetData($pBar, (1/($vSize)) * 100)
-   RegWrite("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "Fury", "REG_SZ", $ExportLoc & "\Fury.exe")
+   ;RegWrite("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "Fury", "REG_SZ", $ExportLoc & "\Fury.exe")
    GUICtrlSetData($oList, "Created HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run\Fury")
    GUICtrlSetData($pBar, (2/($vSize)) * 100)
+
+
    For $i = 0 to UBound($aExport) - 1
-	  $FolderInput = @ScriptDir & "\" & $aExport[$i]
+	  $FolderInput = $InputLoc & "\" & $aExport[$i]
 		 If FileExists($FolderInput) Then
 			$FolderOutput = $ExportLoc & "\" & $aExport[$i]
 			RunWait(@ComSpec & ' /c xcopy /E /H /I /Y "' & $FolderInput & '" "' & $FolderOutput &'"', "", @SW_HIDE)
 			GUICtrlSetData($oList, "Copied " & $FolderInput)
 			GUICtrlSetData($pBar, (($i + 3) /($vSize)) * 100)
 		 Else
-			GUICtrlSetData($oList, $FolderInput & " does not exists.")
+			GUICtrlSetData($oList, $FolderInput & " does not exist")
 			GUICtrlSetData($pBar, (($i + 3) /($vSize)) * 100)
 		 EndIf
 	  Sleep(100)
