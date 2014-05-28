@@ -1,7 +1,7 @@
 ; Fury
 $version = "0.1.2"
 $created = "5/21/2014"
-$modified = "5/27/2014"
+$modified = "5/28/2014"
 ; Author: Lucas Messenger
 ; Credits: Kenton Tofte, Luke Moore
 ; ------------------------------
@@ -61,7 +61,6 @@ Dim $cClean, $cFresh, $cDiagnostics, $cRecovery, $cOpen, $cScreensaver, $cPostpr
 If @ScriptDir = $ExportLoc Then
    CreateDesktopGUI()
 Else
-   dataImport()
    CreateUSBGUI()
 EndIf
 
@@ -164,6 +163,7 @@ While 1
 			If NOT $ckdClean AND NOT $ckdFresh AND NOT $ckdDiagnostics AND NOT $ckdRecovery = $GUI_CHECKED Then
 			   MsgBox($MB_SYSTEMMODAL, "Error", "Nothing is selected!")
 			Else
+			   dataImport()
 			   CopyData()
 			EndIF
 
@@ -261,7 +261,7 @@ While 1
 			EndIf
 
 			If $ckdScreensaver = 1 Then
-			   ; Keep from sleeping for 3 days
+			   ; Keep from sleeping for forever
 			   Run(@ComSpec& ' /c "' & @ScriptDir & '\admin\ScreensaverX.exe -q"')
 			EndIf
 
@@ -386,7 +386,7 @@ Func CopyData()
 
 	If DirGetSize($ExportLoc) = -1 Then
 	 DirCreate($ExportLoc)
-	 GUICtrlSetData($oList, "Sucessfully created " & $ExportLoc)
+	 GUICtrlSetData($oList, "Created " & $ExportLoc)
   Else
 	GUICtrlSetData($oList, "Did not create " & $ExportLoc)
 	GUICtrlSetData($oList, "Directory already exists. Will only copy folders.")
@@ -421,8 +421,10 @@ Func CopyData()
 
    ; Copy files to $ExportLoc
    FileCopy(@ScriptDir & "\Fury.exe", $ExportLoc)
+   GUICtrlSetData($oList, "Copied " & @ScriptDir & "\Fury.exe")
    GUICtrlSetData($pBar, (1/($vSize)) * 100)
    RegWrite("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "Fury", "REG_SZ", $ExportLoc & "\Fury.exe")
+   GUICtrlSetData($oList, "Created HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run\Fury")
    GUICtrlSetData($pBar, (2/($vSize)) * 100)
    For $i = 0 to UBound($aExport) - 1
 	  $FolderInput = @ScriptDir & "\" & $aExport[$i]
