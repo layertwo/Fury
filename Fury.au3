@@ -1,7 +1,7 @@
 ; Fury
-$version = "0.1.2"
+$version = "0.1.3"
 $created = "5/21/2014"
-$modified = "5/28/2014"
+$modified = "5/29/2014"
 ; Author: Lucas Messenger
 ; Credits: Kenton Tofte, Luke Moore
 ; ------------------------------
@@ -421,6 +421,9 @@ Func CopyData()
 	GUIAdjustments(0)
 	Sleep (100)
 
+DirCreate($ExportLoc & "\admin")
+FileInstall(".\admin\unzip.exe", $ExportLoc & "\admin\unzip.exe")
+
 	If DirGetSize($ExportLoc) = -1 Then
 	 DirCreate($ExportLoc)
 	 GUICtrlSetData($oList, "Created " & $ExportLoc)
@@ -448,7 +451,7 @@ Func CopyData()
    EndIf
 
    ; Add default folders to array
-   _ArrayAdd($aMerge, "admin")
+   ;_ArrayAdd($aMerge, "admin")
    _ArrayAdd($aMerge, "Liberty")
    $aExport = _ArrayUnique($aMerge, 1, 0, 0, 0)
    _ArraySort($aExport, 0)
