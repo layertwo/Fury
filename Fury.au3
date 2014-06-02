@@ -1,22 +1,22 @@
 ; Fury
 $version = "0.1.3"
 $created = "5/21/2014"
-$modified = "5/29/2014"
+$modified = "6/2/2014"
 ; Author: Lucas Messenger
 ; Credits: Kenton Tofte, Luke Moore
 ; ------------------------------
 ; Fury icon: http://www.iconspedia.com/icon/fire-icon-35660.html
 ; CC Attribution license for icon: https://creativecommons.org/licenses/by/3.0/
 ; ------------------------------
+; Extracting archives done by unzip.exe
+;
+; ------------------------------
 ; Error/Exit Codes
 ; 0 - Complete
 ; 1 - Error reading folders.txt
 ; 2 - Cannot find comma delimination
 ; 3 - Error importing to individual arrays
-; -------------------------------
-; Comments
-;
-;
+
 
 #include <GuiConstantsEx.au3>
 #include <MsgBoxConstants.au3>
@@ -96,17 +96,14 @@ Func dataImport()
 
 	 If NOT FileExists($File) Then
 			MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Does the file exist?" & @CRLF & @CRLF & "Error code: 1")
-			Exit 1
 		 EndIf
 
 	  If Not _fileReadToArray($File, $aOrig) Then
 		 MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. Does the file exist?" & $File & @CRLF & @CRLF & "Error code: 1")
-		 Exit 1
 	  Else
 		 _ArraySearch($aOrig, ",", 0, 0, 0, 1)
 		 If @error Then
 			MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file. folders.txt is not comma delimited, or is missing commas." & @CRLF & @CRLF & "Error code: 2")
-			Exit 2
 		 Else
 			For $x = 1 to ($aOrig[0])
 			   $curLine = $aOrig[$x]
@@ -126,7 +123,6 @@ Func dataImport()
 					 _ArrayAdd($aRecovery, $strSplit[2])
 				  Case Else
 					 MsgBox($MB_SYSTEMMODAL, "Import error", "There was an error reading the file." & @CRLF & @CRLF & "Error code: 3")
-					 Exit 3
 			   EndSelect
 			Next
 		 EndIf
@@ -451,18 +447,18 @@ FileInstall(".\admin\unzip.exe", $ExportLoc & "\admin\unzip.exe")
    EndIf
 
    ; Add default folders to array
-   ;_ArrayAdd($aMerge, "admin")
+   _ArrayAdd($aMerge, "admin")
    _ArrayAdd($aMerge, "Liberty")
    $aExport = _ArrayUnique($aMerge, 1, 0, 0, 0)
    _ArraySort($aExport, 0)
 
    ; Determine array size
-   $vSize = UBound($aExport) + 2
+   $vSize = UBound($aExport) + 3
 
    FileCopy(@ScriptDir & "\Fury.exe", $ExportLoc)
    GUICtrlSetData($oList, "Copied " & @ScriptDir & "\Fury.exe")
    GUICtrlSetData($pBar, (1/($vSize)) * 100)
-   ;RegWrite("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "Fury", "REG_SZ", $ExportLoc & "\Fury.exe")
+   RegWrite("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "Fury", "REG_SZ", $ExportLoc & "\Fury.exe")
    GUICtrlSetData($oList, "Created HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run\Fury")
    GUICtrlSetData($pBar, (2/($vSize)) * 100)
 
@@ -470,13 +466,36 @@ FileInstall(".\admin\unzip.exe", $ExportLoc & "\admin\unzip.exe")
    If $useServer = True Then
 	  $InputLoc = $ExportLoc
 	  For $i = 0 to UBound($aExport) - 1
-		 $fileGet = InetGet($alektoPath & '/' & $aExport[$i] & ".zip", $ExportLoc & '\' & $aExport[$i] & ".zip", 2)
-		 InetClose($fileGet)
-		 GUICtrlSetData($oList, "Downloaded " & $aExport[$i] & ".zip")
-		 RunWait(@ComSpec & ' /c "' & @ScriptDir & '\admin\unzip.exe -o ' & $ExportLoc & '\' & $aExport[$i] & '.zip -d ' & $ExportLoc & '"')
-		 FileDelete($ExportLoc &  '\' & $aExport[$i] & ".zip")
+		  _GUICtrlListBox_BeginUpdate($oList)
+		 _GUICtrlListBox_AddString($oList, "Downloading " & $aExport[$i] & ".zip... 0%")
+		 $fileGet = InetGet($alektoPath & '/' & $aExport[$i] & ".zip", $ExportLoc & '\' & $aExport[$i] & ".zip", 2, 1)
+		 $serverSize = InetGetSize($alektoPath & '/' & $aExport[$i] & ".zip", 2)
+		 _GUICtrlListBox_EndUpdate($oList)
 		 GUICtrlSetData($pBar, (($i + 3) /($vSize)) * 100)
+		 Do
+			 _GUICtrlListBox_BeginUpdate($oList)
+			$fileSize = InetGetInfo($fileGet, 0)
+			_GUICtrlListBox_DeleteString($oList, _GUICtrlListBox_GetCount($oList) - 1)
+			Sleep(50)
+			_GUICtrlListBox_AddString($oList, "Downloading " & $aExport[$i] & ".zip... " & Round((($fileSize/$serverSize) * 100), 0) & "%")
+			_GUICtrlListBox_EndUpdate($oList)
+		 Until InetGetInfo($fileGet, 2)
+
+		 InetClose($fileGet)
+
+		 _GUICtrlListBox_BeginUpdate($oList)
+		 _GUICtrlListBox_DeleteString($oList, _GUICtrlListBox_GetCount($oList) - 1)
+		 Sleep(10)
+		 _GUICtrlListBox_AddString($oList, "Downloading " & $aExport[$i] & ".zip... 100%")
+		 _GUICtrlListBox_EndUpdate($oList)
 	  Next
+	  GUICtrlSetData($oList, "Unzipping folders. Please wait... (this may take some time)")
+	  For $i = 0 to Ubound($aExport) - 1
+		 RunWait(@ComSpec & ' /c "' & @ScriptDir & '\admin\unzip.exe -o ' & $ExportLoc & '\' & $aExport[$i] & '.zip -d ' & $ExportLoc & '"', "", @SW_HIDE)
+		 FileDelete($ExportLoc &  '\' & $aExport[$i] & ".zip")
+	  Next
+	  GUICtrlSetData($pBar, 100)
+	  GUICtrlSetData($oList, "All folders unzipped.")
    Else
 	  For $i = 0 to UBound($aExport) - 1
 	  $FolderInput = @ScriptDir & "\" & $aExport[$i]
