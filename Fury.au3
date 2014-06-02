@@ -82,9 +82,9 @@ Func dataImport()
    If $useServer = True Then
 	  If Ping("10.254.10.29",1000) >=1 Then
 		 GUICtrlSetData($oList, "Server found. Downloading folders.txt from server...")
-		 $txtGet = InetGet($serverPath & '/admin/folders.txt', @TempDir & '\' & $txtName, 2)
+		 $txtGet = InetGet($serverPath & '/admin/folders.txt', $TempDir & $txtName, 2)
 		 InetClose($txtGet)
-		 $File = @TempDir & '\' & $txtName
+		 $File = $TempDir & $txtName
 		 GUICtrlSetData($oList, "Downloaded folders.txt from server")
 	  Else
 		 GUICtrlSetData($oList, "Cannot locate server. Using local copy of folders.txt.")
@@ -127,6 +127,8 @@ Func dataImport()
 			Next
 		 EndIf
 	  EndIf
+
+	  FileDelete($ExportLoc & '\' & $txtName)
 EndFunc
 
 ; Create USB GUI
@@ -168,7 +170,7 @@ $pBar = GUICtrlCreateProgress(55, 109, 410, 14)
 $oList = GUICtrlCreateList("", 5, 130, 460, 140, BitOr($WS_VSCROLL, $WS_BORDER))
 
 ; Bottom label
-GUICtrlCreateLabel("Lucas Messenger | Fury v" & $version & " | Updated " & $modified, 5, $height - 201 )
+GUICtrlCreateLabel("Fury v" & $version & " | Updated " & $modified, 5, $height - 201 )
 
 ; GUI MESSAGE LOOP
 GUISetState(@SW_SHOW)
@@ -494,7 +496,6 @@ FileInstall(".\admin\unzip.exe", $ExportLoc & "\admin\unzip.exe")
 		 RunWait(@ComSpec & ' /c "' & @ScriptDir & '\admin\unzip.exe -o ' & $ExportLoc & '\' & $aExport[$i] & '.zip -d ' & $ExportLoc & '"', "", @SW_HIDE)
 		 FileDelete($ExportLoc &  '\' & $aExport[$i] & ".zip")
 	  Next
-	  GUICtrlSetData($pBar, 100)
 	  GUICtrlSetData($oList, "All folders unzipped.")
    Else
 	  For $i = 0 to UBound($aExport) - 1
@@ -509,7 +510,8 @@ FileInstall(".\admin\unzip.exe", $ExportLoc & "\admin\unzip.exe")
 		 GUICtrlSetData($pBar, (($i + 3) /($vSize)) * 100)
 	  Sleep(100)
    Next
-   EndIf
+EndIf
+	  GUICtrlSetData($pBar, 100)
 	  GUICtrlSetData($oList, "Operation completed.")
 	  GUIAdjustments(1)
 EndFunc
