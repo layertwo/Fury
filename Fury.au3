@@ -1,7 +1,7 @@
 ; Fury
-$version = "0.1.3"
+$version = "0.1.4"
 $created = "5/21/2014"
-$modified = "6/2/2014"
+$modified = "6/6/2014"
 ; Author: Lucas Messenger
 ; Credits: Kenton Tofte, Luke Moore
 ; ------------------------------
@@ -9,7 +9,6 @@ $modified = "6/2/2014"
 ; CC Attribution license for icon: https://creativecommons.org/licenses/by/3.0/
 ; ------------------------------
 ; Extracting archives done by unzip.exe
-;
 ; ------------------------------
 ; Error/Exit Codes
 ; 0 - Complete
@@ -493,7 +492,7 @@ FileInstall(".\admin\unzip.exe", $ExportLoc & "\admin\unzip.exe")
 	  Next
 	  GUICtrlSetData($oList, "Unzipping folders. Please wait... (this may take some time)")
 	  For $i = 0 to Ubound($aExport) - 1
-		 RunWait(@ComSpec & ' /c "' & @ScriptDir & '\admin\unzip.exe -o ' & $ExportLoc & '\' & $aExport[$i] & '.zip -d ' & $ExportLoc & '"', "", @SW_HIDE)
+		 RunWait(@ComSpec & ' /c "' & $ExportLoc & '\admin\unzip.exe -o ' & $ExportLoc & '\' & $aExport[$i] & '.zip -d ' & $ExportLoc & '"', "", @SW_HIDE)
 		 FileDelete($ExportLoc &  '\' & $aExport[$i] & ".zip")
 	  Next
 	  GUICtrlSetData($oList, "All folders unzipped.")
