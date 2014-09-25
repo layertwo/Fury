@@ -1,9 +1,9 @@
 ; Fury
-$version = "0.1.4"
+$version = "0.1.5"
 $created = "5/21/2014"
-$modified = "6/6/2014"
+$modified = "9/25/2014"
 ; Author: Lucas Messenger
-; Credits: Kenton Tofte, Luke Moore
+; Credits: Kenton Tofte
 ; ------------------------------
 ; Fury icon: http://www.iconspedia.com/icon/fire-icon-35660.html
 ; CC Attribution license for icon: https://creativecommons.org/licenses/by/3.0/
@@ -90,6 +90,7 @@ Func dataImport()
 		 $File = @ScriptDir & '\admin\folders.txt'
 	  EndIf
    Else
+		 FileInstall(".\admin\folders.txt", $ExportLoc & "\admin\folders.txt")
 		$File = @ScriptDir & '\admin\folders.txt'
    EndIf
 
@@ -113,7 +114,7 @@ Func dataImport()
 			   $strSplit = StringSplit($curLine, ",")
 			   Select
 				  Case $strClean = 1
-						_ArrayAdd($aClean, $strSplit[2])
+					 _ArrayAdd($aClean, $strSplit[2])
 				  Case $strFresh = 1
 					 _ArrayAdd($aFresh, $strSplit[2])
 				  Case $strDiagnostics = 1
@@ -419,7 +420,8 @@ Func CopyData()
 	Sleep (100)
 
 DirCreate($ExportLoc & "\admin")
-FileInstall(".\admin\unzip.exe", $ExportLoc & "\admin\unzip.exe")
+FileInstall(".\admin\7za.exe", $ExportLoc & "\admin\7za.exe")
+
 
 	If DirGetSize($ExportLoc) = -1 Then
 	 DirCreate($ExportLoc)
@@ -464,7 +466,7 @@ FileInstall(".\admin\unzip.exe", $ExportLoc & "\admin\unzip.exe")
    GUICtrlSetData($pBar, (2/($vSize)) * 100)
 
    ; Copy files to $ExportLoc
-   If $useServer = True Then
+   If GUICtrlRead($iNetwork) = $GUI_CHECKED Then
 	  $InputLoc = $ExportLoc
 	  For $i = 0 to UBound($aExport) - 1
 		  _GUICtrlListBox_BeginUpdate($oList)
@@ -492,7 +494,7 @@ FileInstall(".\admin\unzip.exe", $ExportLoc & "\admin\unzip.exe")
 	  Next
 	  GUICtrlSetData($oList, "Unzipping folders. Please wait... (this may take some time)")
 	  For $i = 0 to Ubound($aExport) - 1
-		 RunWait(@ComSpec & ' /c "' & $ExportLoc & '\admin\unzip.exe -o ' & $ExportLoc & '\' & $aExport[$i] & '.zip -d ' & $ExportLoc & '"', "", @SW_HIDE)
+		 RunWait(@ComSpec & " /k " &  $ExportLoc & "\admin\7za.exe x " & $ExportLoc & "\" & $aExport[$i] & ".zip" & " -o" & $ExportLoc, "")
 		 FileDelete($ExportLoc &  '\' & $aExport[$i] & ".zip")
 	  Next
 	  GUICtrlSetData($oList, "All folders unzipped.")
